@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f4ee" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta
+      name="description"
+      content="Wikloom — 本地优先的个人知识库，用双向链接把想法织成一张网。"
+    />
+    <title>Wikloom</title>
+    <script>
+      // 首屏前恢复主题，避免深浅色闪烁。
+      try {
+        if (localStorage.getItem("wikloom:theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+# 依赖与构建产物
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# 构建时临时目录（Windows 下 esbuild 需要）
+.tmp/
+
+# 杂项
+.DS_Store
+Thumbs.db
+*.log
+pnpm-debug.log*

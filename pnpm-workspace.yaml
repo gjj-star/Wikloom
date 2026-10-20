@@ -1,0 +1,10 @@
+# pnpm 11 的项目级设置放在这里（.npmrc 不再读项目级设置）
+allowBuilds:
+  esbuild: false
+
+# 非交互环境（本机 Bot 沙箱）里重建 node_modules 时不要等确认
+confirmModulesPurge: false
+
+# Node 24 + Windows 下 pnpm 的 junction 无法被 ESM loader 正确 realpath，
+# 导致 vite 找不到自己的依赖（rollup 等）。flat 布局规避。
+nodeLinker: hoisted
