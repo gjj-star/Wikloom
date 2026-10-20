@@ -7,7 +7,6 @@ import { SettingsPage } from "../features/settings/SettingsPage";
 import { useUiStore } from "./uiStore";
 import { CommandPalette } from "./CommandPalette";
 import { Sidebar } from "./Sidebar";
-import { Toaster } from "../ui/Toaster";
 
 export function Shell() {
   const route = useUiStore((state) => state.route);
@@ -31,7 +30,6 @@ export function Shell() {
         )}
       </main>
       <CommandPalette />
-      <Toaster />
     </div>
   );
 }

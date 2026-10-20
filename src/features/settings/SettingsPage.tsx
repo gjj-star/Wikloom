@@ -1,10 +1,18 @@
-import { Check } from "lucide-react";
-import { useNotesStore } from "../notes/store";
+import { useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  FolderOpen,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
+import { openVaultPicker } from "../../app/actions";
 import {
   useUiStore,
   type ProseSize,
   type Theme,
 } from "../../app/uiStore";
+import { useNotesStore } from "../notes/store";
 import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
 import { Panel } from "../../ui/Panel";
@@ -14,40 +22,118 @@ const themeOptions: Array<{ value: Theme; label: string; hint: string }> = [
   { value: "dark", label: "深色", hint: "暖黑底 · 低对比" },
 ];
 
-const statusLabels: Record<string, string> = {
-  idle: "未加载",
-  loading: "加载中",
-  ready: "正常",
-  error: "错误",
-};
-
 export function SettingsPage() {
   const theme = useUiStore((state) => state.theme);
   const setTheme = useUiStore((state) => state.setTheme);
   const proseSize = useUiStore((state) => state.proseSize);
   const setProseSize = useUiStore((state) => state.setProseSize);
-  const navigate = useUiStore((state) => state.navigate);
-  const showToast = useUiStore((state) => state.showToast);
 
-  const status = useNotesStore((state) => state.status);
-  const load = useNotesStore((state) => state.load);
-  const showError = useNotesStore((state) => state.showError);
-  const restore = useNotesStore((state) => state.restore);
-  const setQuery = useNotesStore((state) => state.setQuery);
+  const vault = useNotesStore((state) => state.vault);
+  const notes = useNotesStore((state) => state.notes);
+  const errors = useNotesStore((state) => state.errors);
+  const rescan = useNotesStore((state) => state.rescan);
+  const [rescanning, setRescanning] = useState(false);
+
+  async function handleRescan() {
+    setRescanning(true);
+    try {
+      await rescan();
+    } finally {
+      setRescanning(false);
+    }
+  }
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-6">
         <h1 className="text-[13px] font-semibold text-ink">设置</h1>
-        <span className="text-[11px] text-faint">外观、阅读与演示状态</span>
+        <span className="text-[11px] text-faint">
+          知识库、外观、阅读与关于
+        </span>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[820px] space-y-4 px-8 py-8">
           <Panel
-            title="外观"
-            description="主题只影响界面，不写入笔记。"
+            title="知识库"
+            description="笔记以 Markdown 文件存在这个文件夹里。"
           >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="rounded border border-line bg-surface px-1.5 py-0.5 text-[9px] text-faint">
+                    {vault?.kind === "tauri" ? "本地文件夹" : "内存演示库"}
+                  </span>
+                  <p className="truncate text-[12.5px] font-medium text-ink">
+                    {vault?.name ?? "未打开知识库"}
+                  </p>
+                </div>
+                <p className="mt-1.5 break-all font-mono text-[10.5px] leading-relaxed text-muted">
+                  {vault?.root ?? "—"}
+                </p>
+                <p className="mt-1.5 text-[10.5px] text-faint">
+                  {notes.length} 篇笔记 · {errors.length} 个异常文件
+                </p>
+              </div>
+
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  size="sm"
+                  icon={<FolderOpen size={13} />}
+                  onClick={openVaultPicker}
+                >
+                  切换知识库…
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="border border-line"
+                  disabled={rescanning}
+                  icon={
+                    rescanning ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={13} />
+                    )
+                  }
+                  onClick={() => void handleRescan()}
+                >
+                  重新扫描
+                </Button>
+              </div>
+            </div>
+
+            {errors.length > 0 ? (
+              <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  <AlertTriangle size={12} />
+                  {errors.length} 个文件读取异常（其余笔记不受影响）
+                </div>
+                <ul className="mt-2 max-h-44 space-y-1.5 overflow-y-auto">
+                  {errors.map((error) => (
+                    <li
+                      key={`${error.path}-${error.message}`}
+                      className="rounded-md bg-card/60 px-2 py-1.5"
+                    >
+                      <p className="break-all font-mono text-[10px] text-ink">
+                        {error.path}
+                      </p>
+                      <p className="mt-0.5 break-words text-[10px] leading-relaxed text-muted">
+                        {error.message}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <p className="mt-3 text-[10.5px] leading-relaxed text-faint">
+              扫描时会给没有 frontmatter 的文件补上 id / title / created /
+              updated / tags，并写回磁盘；已有字段不会被覆盖。
+            </p>
+          </Panel>
+
+          <Panel title="外观" description="主题只影响界面，不写入笔记。">
             <div className="grid grid-cols-2 gap-3">
               {themeOptions.map((option) => {
                 const active = theme === option.value;
@@ -157,77 +243,30 @@ export function SettingsPage() {
                 正文预览：好的排版让长文也能读下去。
               </span>
             </div>
-          </Panel>
 
-          <Panel
-            title="演示状态"
-            description="M1 没有真实数据源，这几个按钮直接切换界面状态。"
-          >
-            <p className="mb-3 text-[11.5px] leading-relaxed text-muted">
-              当前状态：
-              <span className="font-medium text-ink">
-                {statusLabels[status] ?? status}
-              </span>
+            <p className="mt-3 text-[10.5px] leading-relaxed text-faint">
+              编辑后 800ms 自动保存到磁盘，Ctrl S 立即保存；写入采用临时文件 +
+              rename，中途崩溃不会留下半个文件。
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  load();
-                  navigate("notes");
-                }}
-              >
-                模拟加载中
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  showError();
-                  navigate("notes");
-                }}
-              >
-                模拟加载失败
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() => {
-                  restore();
-                  navigate("notes");
-                }}
-              >
-                恢复正常
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="border border-line"
-                onClick={() => {
-                  setQuery("不存在的标题");
-                  navigate("notes");
-                  showToast("空状态演示：没有匹配的笔记");
-                }}
-              >
-                查看空列表
-              </Button>
-            </div>
           </Panel>
 
           <Panel title="关于">
             <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-2.5 text-[11.5px]">
               <dt className="text-faint">版本</dt>
-              <dd className="text-ink">v0.1.0 · M1 界面骨架</dd>
+              <dd className="text-ink">v0.2.0 · M2 真实文件系统</dd>
               <dt className="text-faint">技术栈</dt>
               <dd className="text-ink">
                 React 19 · Tauri 2 · Tailwind CSS 4 · CodeMirror 6
               </dd>
               <dt className="text-faint">数据</dt>
-              <dd className="text-ink">内存演示数据，刷新后重置</dd>
-              <dt className="text-faint">知识库</dt>
-              <dd className="text-ink">~/vault（M2 接入文件系统）</dd>
+              <dd className="text-ink">
+                本地 Markdown 文件；frontmatter 存 id / 时间 / 标签
+              </dd>
+              <dt className="text-faint">保存</dt>
+              <dd className="text-ink">自动保存 800ms · Ctrl S · 原子写</dd>
               <dt className="text-faint">命令</dt>
               <dd className="font-mono text-[11px] text-muted">
-                pnpm dev · pnpm build
+                pnpm dev · pnpm build · pnpm tauri dev
               </dd>
             </dl>
           </Panel>

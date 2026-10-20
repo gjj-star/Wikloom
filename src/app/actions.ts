@@ -1,18 +1,18 @@
+import { displayNameFromRoot } from "../core/paths";
+import { isTauriRuntime } from "../core/fs/runtime";
+import { seedDemoVault } from "../features/notes/data/demoVaults";
 import { useNotesStore } from "../features/notes/store";
 import { useUiStore } from "./uiStore";
 
-/** 打开一条笔记；跨知识库时先切换知识库。 */
+/** 打开一条笔记；跨库切换已经不在这里处理。 */
 export function openNote(
   noteId: string,
   options?: { mode?: "read" | "edit" },
 ): void {
   const notesStore = useNotesStore.getState();
-  const note = notesStore.notes.find((item) => item.id === noteId);
-  if (!note) return;
+  if (!notesStore.notes.some((item) => item.id === noteId)) return;
 
-  if (note.vaultId !== notesStore.vaultId) notesStore.setVault(note.vaultId);
-  notesStore.select(noteId);
-
+  notesStore.selectNote(noteId);
   const ui = useUiStore.getState();
   ui.navigate("notes");
   if (options?.mode) ui.setMode(options.mode);
@@ -30,9 +30,16 @@ export function openNoteByTitle(title: string): boolean {
   return true;
 }
 
-export function createNote(): string {
-  const id = useNotesStore.getState().createNote();
+export async function createNote(): Promise<string | null> {
+  const id = await useNotesStore.getState().createNote();
   const ui = useUiStore.getState();
+  if (!id) {
+    ui.showToast(
+      useNotesStore.getState().saveError ?? "新建笔记失败。",
+      "error",
+    );
+    return null;
+  }
   ui.navigate("notes");
   ui.setMode("edit");
   ui.closePalette();
@@ -52,10 +59,66 @@ export function selectTag(tag: string): void {
   useUiStore.getState().navigate("notes");
 }
 
-export function saveActiveNote(): void {
+export async function saveActiveNote(): Promise<void> {
   const notesStore = useNotesStore.getState();
+  await notesStore.saveNote(notesStore.selectedId);
+  const state = useNotesStore.getState();
   const ui = useUiStore.getState();
-  notesStore.saveNote(notesStore.selectedId);
-  ui.setMode("read");
-  ui.showToast("已保存到内存草稿", "success");
+  if (state.saveState === "error") {
+    ui.showToast(state.saveError ?? "保存失败。", "error");
+  } else {
+    ui.showToast("已保存到磁盘", "success");
+  }
+}
+
+export function openVaultPicker(): void {
+  useUiStore.getState().openVaultPicker();
+}
+
+/** 浏览器/测试环境：打开内置内存知识库。 */
+export async function chooseDemoVault(id: string): Promise<boolean> {
+  const vault = seedDemoVault(id);
+  if (!vault) return false;
+
+  await useNotesStore.getState().openVault(vault);
+  const ui = useUiStore.getState();
+  if (useNotesStore.getState().status === "ready") {
+    ui.navigate("notes");
+    ui.closeVaultPicker();
+    return true;
+  }
+  return false;
+}
+
+/** 桌面环境：目录选择与 fs scope 放行都在 Rust 里完成，前端只拿结果。 */
+export async function chooseTauriVault(): Promise<boolean> {
+  if (!isTauriRuntime()) return false;
+
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const selected = await invoke<string | null>("pick_vault");
+    if (typeof selected !== "string" || !selected) return false;
+
+    await useNotesStore.getState().openVault({
+      kind: "tauri",
+      root: selected,
+      name: displayNameFromRoot(selected),
+    });
+
+    const ui = useUiStore.getState();
+    if (useNotesStore.getState().status === "ready") {
+      ui.navigate("notes");
+      ui.closeVaultPicker();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    useUiStore
+      .getState()
+      .showToast(
+        `选择文件夹失败：${error instanceof Error ? error.message : String(error)}`,
+        "error",
+      );
+    return false;
+  }
 }

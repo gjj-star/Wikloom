@@ -84,24 +84,19 @@ export function NoteList() {
   const notes = useNotesStore((state) => state.notes);
   const status = useNotesStore((state) => state.status);
   const selectedId = useNotesStore((state) => state.selectedId);
-  const vaultId = useNotesStore((state) => state.vaultId);
   const query = useNotesStore((state) => state.query);
   const tagFilter = useNotesStore((state) => state.tagFilter);
+  const errors = useNotesStore((state) => state.errors);
   const setQuery = useNotesStore((state) => state.setQuery);
   const setTagFilter = useNotesStore((state) => state.setTagFilter);
-  const retry = useNotesStore((state) => state.retry);
-
-  const vaultNotes = useMemo(
-    () => notes.filter((note) => note.vaultId === vaultId),
-    [notes, vaultId],
-  );
+  const rescan = useNotesStore((state) => state.rescan);
 
   const filtered = useMemo(() => {
-    const result = searchNotes(vaultNotes, query);
+    const result = searchNotes(notes, query);
     return tagFilter
       ? result.filter((note) => note.tags.includes(tagFilter))
       : result;
-  }, [vaultNotes, query, tagFilter]);
+  }, [notes, query, tagFilter]);
 
   const loading = status === "loading" || status === "idle";
   const hasFilter = Boolean(query.trim() || tagFilter);
@@ -114,7 +109,11 @@ export function NoteList() {
           {filtered.length}
         </span>
         <div className="ml-auto">
-          <IconButton label="新建笔记" size="sm" onClick={() => createNote()}>
+          <IconButton
+            label="新建笔记"
+            size="sm"
+            onClick={() => void createNote()}
+          >
             <Plus size={15} />
           </IconButton>
         </div>
@@ -160,6 +159,23 @@ export function NoteList() {
         ) : null}
       </div>
 
+      {errors.length > 0 ? (
+        <div className="mx-3 mb-2 shrink-0 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-2 text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">
+          <div className="flex items-center gap-1.5 font-medium">
+            <AlertTriangle size={11} className="shrink-0" />
+            {errors.length} 个文件读取异常
+          </div>
+          <p
+            className="mt-1 line-clamp-2 opacity-80"
+            title={errors
+              .map((error) => `${error.path}：${error.message}`)
+              .join("\n")}
+          >
+            {errors[0].path}：{errors[0].message}
+          </p>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <ListSkeleton />
@@ -168,10 +184,10 @@ export function NoteList() {
             compact
             icon={<AlertTriangle size={16} />}
             title="列表读取失败"
-            description="知识库暂时读不出来。演示模式下可在设置里恢复。"
+            description="知识库暂时读不出来，可以重新扫描或换库。"
             action={
-              <Button size="sm" onClick={retry}>
-                重试
+              <Button size="sm" onClick={() => void rescan()}>
+                重新扫描
               </Button>
             }
           />
@@ -179,11 +195,11 @@ export function NoteList() {
           <EmptyState
             compact
             icon={hasFilter ? <SearchX size={16} /> : <FileText size={16} />}
-            title={hasFilter ? "没有匹配的笔记" : "还没有笔记"}
+            title={hasFilter ? "没有匹配的笔记" : "这个知识库还是空的"}
             description={
               hasFilter
                 ? "换个关键词，或者清掉标签筛选再看看。"
-                : "新建一篇，从第一行字开始。"
+                : "新建一篇，Wikloom 会立刻在文件夹里写下 .md 文件。"
             }
             action={
               hasFilter ? (
@@ -197,7 +213,7 @@ export function NoteList() {
                   清除筛选
                 </Button>
               ) : (
-                <Button size="sm" onClick={() => createNote()}>
+                <Button size="sm" onClick={() => void createNote()}>
                   新建笔记
                 </Button>
               )

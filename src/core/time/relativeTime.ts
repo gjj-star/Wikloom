@@ -16,6 +16,11 @@ export function formatDateTime(timestamp: number): string {
   return `${formatCalendarDate(timestamp)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function formatClock(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** 列表里用的相对时间：刚刚 / n 分钟前 / n 小时前 / 昨天 / n 天前 / 日期 */
 export function relativeTime(timestamp: number, now = Date.now()): string {
   const diff = Math.max(0, now - timestamp);

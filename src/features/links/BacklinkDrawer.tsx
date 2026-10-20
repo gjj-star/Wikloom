@@ -56,13 +56,7 @@ export function BacklinkDrawer() {
 
   const note = notes.find((item) => item.id === selectedId);
   const groups = useMemo(
-    () =>
-      note
-        ? getBacklinks(
-            note,
-            notes.filter((item) => item.vaultId === note.vaultId),
-          )
-        : { references: [], mentions: [] },
+    () => (note ? getBacklinks(note, notes) : { references: [], mentions: [] }),
     [note, notes],
   );
 

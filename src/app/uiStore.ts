@@ -53,6 +53,7 @@ interface UiState {
   route: Route;
   paletteOpen: boolean;
   backlinksOpen: boolean;
+  vaultPickerOpen: boolean;
   theme: Theme;
   mode: EditorMode;
   proseSize: ProseSize;
@@ -67,6 +68,10 @@ interface UiState {
 
   setBacklinksOpen: (open: boolean) => void;
   toggleBacklinks: () => void;
+
+  openVaultPicker: () => void;
+  closeVaultPicker: () => void;
+  toggleVaultPicker: () => void;
 
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -84,6 +89,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   route: "notes",
   paletteOpen: false,
   backlinksOpen: false,
+  vaultPickerOpen: false,
   theme: readTheme(),
   mode: readMode(),
   proseSize: readSize(),
@@ -108,6 +114,11 @@ export const useUiStore = create<UiState>((set, get) => ({
 
   setBacklinksOpen: (open) => set({ backlinksOpen: open }),
   toggleBacklinks: () => set((state) => ({ backlinksOpen: !state.backlinksOpen })),
+
+  openVaultPicker: () => set({ vaultPickerOpen: true }),
+  closeVaultPicker: () => set({ vaultPickerOpen: false }),
+  toggleVaultPicker: () =>
+    set((state) => ({ vaultPickerOpen: !state.vaultPickerOpen })),
 
   setTheme(theme) {
     set({ theme });

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   FileText,
   Link2,
+  Loader2,
   Pencil,
   Plus,
 } from "lucide-react";
@@ -14,8 +15,12 @@ import type { EditorMode } from "../../app/uiStore";
 import { useUiStore } from "../../app/uiStore";
 import { modKey } from "../../core/platform";
 import { countCharacters } from "../../core/text/plainText";
-import { formatDateTime } from "../../core/time/relativeTime";
-import { createNote, openAllNotes, saveActiveNote } from "../../app/actions";
+import { formatClock, formatDateTime } from "../../core/time/relativeTime";
+import {
+  createNote,
+  openAllNotes,
+  saveActiveNote,
+} from "../../app/actions";
 import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
 import { EmptyState } from "../../ui/EmptyState";
@@ -25,7 +30,6 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Tag } from "../../ui/Tag";
 import { CodeEditor } from "../editor/CodeEditor";
 import { MarkdownView } from "../editor/MarkdownView";
-import { getVault } from "./data/vaults";
 import { useNotesStore } from "./store";
 
 function stripLeadingTitle(content: string, title: string): string {
@@ -54,7 +58,11 @@ function ArticleSkeleton() {
             key={index}
             className={cn(
               "h-3.5",
-              index % 4 === 0 ? "w-full" : index % 3 === 0 ? "w-11/12" : "w-10/12",
+              index % 4 === 0
+                ? "w-full"
+                : index % 3 === 0
+                  ? "w-11/12"
+                  : "w-10/12",
             )}
           />
         ))}
@@ -68,9 +76,13 @@ export function NotePane() {
   const notes = useNotesStore((state) => state.notes);
   const status = useNotesStore((state) => state.status);
   const selectedId = useNotesStore((state) => state.selectedId);
-  const vaultId = useNotesStore((state) => state.vaultId);
+  const vault = useNotesStore((state) => state.vault);
   const updateContent = useNotesStore((state) => state.updateContent);
-  const retry = useNotesStore((state) => state.retry);
+  const rescan = useNotesStore((state) => state.rescan);
+  const saveNote = useNotesStore((state) => state.saveNote);
+  const saveState = useNotesStore((state) => state.saveState);
+  const lastSavedAt = useNotesStore((state) => state.lastSavedAt);
+  const saveError = useNotesStore((state) => state.saveError);
 
   const mode = useUiStore((state) => state.mode);
   const setMode = useUiStore((state) => state.setMode);
@@ -79,19 +91,15 @@ export function NotePane() {
   const toggleBacklinks = useUiStore((state) => state.toggleBacklinks);
 
   const note = notes.find((item) => item.id === selectedId);
-  const vault = getVault(vaultId);
-
   const groups = useMemo(
     () =>
       note
-        ? getBacklinks(
-            note,
-            notes.filter((item) => item.vaultId === note.vaultId),
-          )
+        ? getBacklinks(note, notes)
         : { references: [], mentions: [] },
     [note, notes],
   );
   const totalLinks = groups.references.length + groups.mentions.length;
+  const vaultName = vault?.name ?? "知识库";
 
   const noteTitle = note?.title ?? "";
   useEffect(() => {
@@ -99,14 +107,13 @@ export function NotePane() {
   }, [noteTitle]);
 
   const loading = status === "loading" || status === "idle";
-  const vaultHasNotes = notes.some((item) => item.vaultId === vaultId);
   const proseStyle = { "--prose-size": `${proseSize}px` } as CSSProperties;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-canvas">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
         <nav className="flex min-w-0 items-center gap-1 text-[11.5px] text-muted">
-          <span className="shrink-0">{vault.name}</span>
+          <span className="max-w-[140px] shrink-0 truncate">{vaultName}</span>
           <ChevronRight size={12} className="shrink-0 text-faint" />
           <button
             type="button"
@@ -145,15 +152,14 @@ export function NotePane() {
 
           <Segmented<EditorMode>
             options={[
-              {
-                value: "read",
-                label: "阅读",
-                icon: <BookOpen size={12} />,
-              },
+              { value: "read", label: "阅读", icon: <BookOpen size={12} /> },
               { value: "edit", label: "编辑", icon: <Pencil size={12} /> },
             ]}
             value={mode}
-            onChange={setMode}
+            onChange={(next) => {
+              setMode(next);
+              if (next === "read" && note) void saveNote(note.id);
+            }}
             ariaLabel="正文模式"
           />
 
@@ -162,7 +168,7 @@ export function NotePane() {
               size="sm"
               variant="primary"
               icon={<Check size={12} />}
-              onClick={saveActiveNote}
+              onClick={() => void saveActiveNote()}
             >
               保存
             </Button>
@@ -177,22 +183,22 @@ export function NotePane() {
           <EmptyState
             icon={<AlertTriangle size={18} />}
             title="读取笔记失败"
-            description="知识库暂时读不出来。演示模式下，可以在设置里恢复。"
-            action={<Button onClick={retry}>重试</Button>}
+            description="知识库暂时读不出来，可以在设置里重新扫描或换库。"
+            action={<Button onClick={() => void rescan()}>重新扫描</Button>}
           />
         </div>
       ) : !note ? (
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <EmptyState
             icon={<FileText size={18} />}
-            title={vaultHasNotes ? "选择一篇笔记" : "还没有笔记"}
+            title={notes.length > 0 ? "选择一篇笔记" : "这个知识库还是空的"}
             description={
-              vaultHasNotes
+              notes.length > 0
                 ? "从左边列表挑一篇，或者开始写新的。"
-                : "新建一篇，从第一行字开始。"
+                : "新建一篇，Wikloom 会立刻在文件夹里写下 .md 文件。"
             }
             action={
-              <Button icon={<Plus size={14} />} onClick={() => createNote()}>
+              <Button icon={<Plus size={14} />} onClick={() => void createNote()}>
                 新建笔记
               </Button>
             }
@@ -208,10 +214,34 @@ export function NotePane() {
             </span>
             <span className="text-faint">·</span>
             <span className="truncate">{note.title}</span>
-            <span className="ml-auto inline-flex items-center gap-1 text-faint">
-              <Kbd>{modKey}</Kbd>
-              <Kbd>S</Kbd>
-              <span>保存</span>
+            <span className="ml-auto inline-flex items-center gap-1.5 text-[10.5px]">
+              {saveState === "saving" ? (
+                <span className="inline-flex items-center gap-1 text-muted">
+                  <Loader2 size={11} className="animate-spin" />
+                  保存中…
+                </span>
+              ) : saveState === "error" ? (
+                <span
+                  className="text-red-500 dark:text-red-400"
+                  title={saveError ?? undefined}
+                >
+                  保存失败，内容还在编辑器里
+                </span>
+              ) : saveState === "saved" ? (
+                <span className="inline-flex items-center gap-1 text-muted">
+                  <Check size={11} className="text-accent" />
+                  已保存
+                  {lastSavedAt ? ` ${formatClock(lastSavedAt)}` : ""}
+                </span>
+              ) : (
+                <span className="text-faint">编辑中 · 自动保存</span>
+              )}
+              <span className="text-faint">·</span>
+              <span className="inline-flex items-center gap-1 text-faint">
+                <Kbd>{modKey}</Kbd>
+                <Kbd>S</Kbd>
+                保存
+              </span>
             </span>
           </div>
           <div
@@ -252,6 +282,15 @@ export function NotePane() {
               <span>{countCharacters(note.content)} 字</span>
               <span>·</span>
               <span>{totalLinks} 个链接</span>
+              {saveState === "saving" ? (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 size={10} className="animate-spin" />
+                    保存中
+                  </span>
+                </>
+              ) : null}
             </div>
 
             <hr className="my-6 border-line" />

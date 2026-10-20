@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ArrowLeftRight,
   FileText,
+  FolderOpen,
   Link2,
   Moon,
   Pencil,
@@ -30,7 +30,6 @@ import { EmptyState } from "../ui/EmptyState";
 import { Kbd } from "../ui/Kbd";
 import { createNote, openNote } from "./actions";
 import { useUiStore } from "./uiStore";
-import { getVault } from "../features/notes/data/vaults";
 import { useNotesStore } from "../features/notes/store";
 
 interface PaletteCommand {
@@ -50,9 +49,7 @@ export function CommandPalette() {
   const closePalette = useUiStore((state) => state.closePalette);
   const theme = useUiStore((state) => state.theme);
   const mode = useUiStore((state) => state.mode);
-
   const notes = useNotesStore((state) => state.notes);
-  const vaultId = useNotesStore((state) => state.vaultId);
 
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -71,27 +68,23 @@ export function CommandPalette() {
     setActiveIndex(0);
   }, [query]);
 
-  const vaultNotes = useMemo(
-    () => notes.filter((note) => note.vaultId === vaultId),
-    [notes, vaultId],
-  );
-
   const noteResults = useMemo(() => {
     const base = query.trim()
-      ? searchNotes(vaultNotes, query)
-      : [...vaultNotes].sort((a, b) => b.updatedAt - a.updatedAt);
+      ? searchNotes(notes, query)
+      : [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
     return base.slice(0, 4);
-  }, [vaultNotes, query]);
+  }, [notes, query]);
 
   const commands = useMemo<PaletteCommand[]>(() => {
-    const otherVault = getVault(vaultId === "personal" ? "work" : "personal");
     return [
       {
         key: "new-note",
         label: "新建笔记",
         hint: `${modKey} N`,
         icon: <Plus size={14} />,
-        run: () => createNote(),
+        run: () => {
+          void createNote();
+        },
       },
       {
         key: "toggle-mode",
@@ -116,14 +109,12 @@ export function CommandPalette() {
       },
       {
         key: "switch-vault",
-        label: `切换到「${otherVault.name}」`,
-        icon: <ArrowLeftRight size={14} />,
+        label: "切换知识库…",
+        icon: <FolderOpen size={14} />,
         run: () => {
-          const notesStore = useNotesStore.getState();
           const ui = useUiStore.getState();
-          notesStore.setVault(otherVault.id);
           ui.closePalette();
-          ui.showToast(`已切换到「${otherVault.name}」`);
+          ui.openVaultPicker();
         },
       },
       {
@@ -148,8 +139,7 @@ export function CommandPalette() {
       },
       {
         key: "toggle-theme",
-        label:
-          theme === "dark" ? "切换到浅色主题" : "切换到深色主题",
+        label: theme === "dark" ? "切换到浅色主题" : "切换到深色主题",
         icon: theme === "dark" ? <Sun size={14} /> : <Moon size={14} />,
         run: () => {
           const ui = useUiStore.getState();
@@ -168,7 +158,7 @@ export function CommandPalette() {
         },
       },
     ];
-  }, [mode, theme, vaultId]);
+  }, [mode, theme]);
 
   const keyword = query.trim().toLowerCase();
   const filteredCommands = keyword
@@ -221,7 +211,6 @@ export function CommandPalette() {
     }
   }
 
-  // 扁平列表的游标：笔记在前，命令在后。
   let cursor = 0;
 
   return (
@@ -302,9 +291,7 @@ export function CommandPalette() {
                       : undefined
                   }
                   onMouseMove={() => setActiveIndex(index)}
-                  onClick={() =>
-                    runItem({ kind: "command", command })
-                  }
+                  onClick={() => runItem({ kind: "command", command })}
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left",
                     active && "bg-hover",

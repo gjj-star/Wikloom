@@ -3,19 +3,15 @@ import { ChevronRight, Hash, Tags as TagsIcon } from "lucide-react";
 import { selectTag } from "../../app/actions";
 import { EmptyState } from "../../ui/EmptyState";
 import { Skeleton } from "../../ui/Skeleton";
-import { getVault } from "../notes/data/vaults";
-import { useNotesStore } from "../notes/store";
+import { useNotesStore } from "./store";
 
 export function TagsPage() {
   const notes = useNotesStore((state) => state.notes);
-  const vaultId = useNotesStore((state) => state.vaultId);
   const status = useNotesStore((state) => state.status);
-  const vault = getVault(vaultId);
 
   const tags = useMemo(() => {
     const counts = new Map<string, number>();
     for (const note of notes) {
-      if (note.vaultId !== vaultId) continue;
       for (const tag of note.tags) {
         counts.set(tag, (counts.get(tag) ?? 0) + 1);
       }
@@ -23,7 +19,7 @@ export function TagsPage() {
     return [...counts.entries()].sort(
       (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"),
     );
-  }, [notes, vaultId]);
+  }, [notes]);
 
   const loading = status === "loading" || status === "idle";
 
@@ -31,7 +27,7 @@ export function TagsPage() {
     <div className="flex h-full min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-6">
         <h1 className="text-[13px] font-semibold text-ink">标签</h1>
-        <span className="text-[11px] text-faint">{vault.name}</span>
+        <span className="text-[11px] text-faint">{notes.length} 篇笔记</span>
         <span className="ml-auto text-[11px] tabular-nums text-faint">
           {tags.length} 个标签
         </span>
@@ -54,7 +50,7 @@ export function TagsPage() {
               <EmptyState
                 icon={<TagsIcon size={18} />}
                 title="还没有标签"
-                description="在笔记里加上标签，它们会汇总到这里。"
+                description="在笔记的 frontmatter 里加上 tags，它们会汇总到这里。"
               />
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -12,7 +12,13 @@ export default defineConfig({
     host: "127.0.0.1",
     watch: {
       // 编辑器保存时会先写临时文件；沙箱下 chokidar 对消失的 tmp 文件会 EBUSY 崩掉。
-      ignored: ["**/.*.tmpdir/**", "**/*.tmp"],
+      // Tauri 的 Rust target 里是正在编译的二进制，也不能被 dev server 监听。
+      ignored: [
+        "**/.*.tmpdir/**",
+        "**/*.tmp",
+        "**/src-tauri/target/**",
+        "**/src-tauri/gen/**",
+      ],
     },
   },
 });

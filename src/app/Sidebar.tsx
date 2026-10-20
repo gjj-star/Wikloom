@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  Check,
   ChevronsUpDown,
+  FolderOpen,
   Library,
   Moon,
   Plus,
@@ -17,7 +17,6 @@ import { Kbd } from "../ui/Kbd";
 import { createNote, openAllNotes } from "./actions";
 import { useUiStore } from "./uiStore";
 import { useNotesStore } from "../features/notes/store";
-import { getVault, vaults } from "../features/notes/data/vaults";
 
 function NavItem({
   icon,
@@ -68,14 +67,12 @@ export function Sidebar() {
   const navigate = useUiStore((state) => state.navigate);
   const theme = useUiStore((state) => state.theme);
   const toggleTheme = useUiStore((state) => state.toggleTheme);
-  const showToast = useUiStore((state) => state.showToast);
-
-  const notes = useNotesStore((state) => state.notes);
-  const vaultId = useNotesStore((state) => state.vaultId);
-  const setVault = useNotesStore((state) => state.setVault);
-
+  const openVaultPicker = useUiStore((state) => state.openVaultPicker);
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
+
+  const notes = useNotesStore((state) => state.notes);
+  const vault = useNotesStore((state) => state.vault);
 
   useEffect(() => {
     if (!vaultOpen) return;
@@ -88,9 +85,8 @@ export function Sidebar() {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [vaultOpen]);
 
-  const vault = getVault(vaultId);
-  const vaultNotes = notes.filter((note) => note.vaultId === vaultId);
-  const tagCount = new Set(vaultNotes.flatMap((note) => note.tags)).size;
+  const vaultName = vault?.name ?? "选择知识库";
+  const tagCount = new Set(notes.flatMap((note) => note.tags)).size;
 
   return (
     <aside className="flex w-[220px] shrink-0 flex-col border-r border-line bg-sidebar">
@@ -111,7 +107,7 @@ export function Sidebar() {
       <div className="px-3 pt-1">
         <button
           type="button"
-          onClick={() => createNote()}
+          onClick={() => void createNote()}
           title={`新建笔记（${modKey}+N；浏览器会保留该组合键，可直接点按）`}
           className="flex h-8 w-full items-center gap-2 rounded-lg border border-line bg-card px-2.5 text-[11.5px] text-muted shadow-[var(--c-shadow-soft)] transition-colors hover:border-line-strong hover:text-ink"
         >
@@ -131,7 +127,7 @@ export function Sidebar() {
         <NavItem
           icon={<Library size={15} />}
           label="全部笔记"
-          count={vaultNotes.length}
+          count={notes.length}
           active={route === "notes"}
           onClick={openAllNotes}
         />
@@ -149,7 +145,6 @@ export function Sidebar() {
           active={route === "clipper"}
           onClick={() => navigate("clipper")}
         />
-
       </nav>
 
       <div ref={vaultRef} className="relative px-2">
@@ -157,18 +152,18 @@ export function Sidebar() {
           type="button"
           onClick={() => setVaultOpen((open) => !open)}
           aria-expanded={vaultOpen}
-          aria-haspopup="listbox"
+          aria-haspopup="menu"
           className="flex w-full items-center gap-2 rounded-lg border border-line bg-card px-2 py-1.5 text-left transition-colors hover:border-line-strong"
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-soft text-[10px] font-semibold text-accent">
-            {vault.name.slice(0, 1)}
+            {vaultName.slice(0, 1)}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[11.5px] font-medium text-ink">
-              {vault.name}
+              {vaultName}
             </span>
             <span className="block text-[9.5px] text-faint">
-              {vaultNotes.length} 篇笔记
+              {vault ? `${notes.length} 篇笔记` : "尚未选择"}
             </span>
           </span>
           <ChevronsUpDown size={13} className="shrink-0 text-faint" />
@@ -176,42 +171,32 @@ export function Sidebar() {
 
         {vaultOpen ? (
           <div
-            role="listbox"
-            aria-label="切换知识库"
+            role="menu"
+            aria-label="知识库"
             className="animate-rise absolute bottom-full left-2 right-2 mb-1.5 overflow-hidden rounded-xl border border-line bg-card p-1 shadow-[var(--c-shadow)]"
           >
-            {vaults.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="option"
-                aria-selected={item.id === vaultId}
-                onClick={() => {
-                  setVault(item.id);
-                  setVaultOpen(false);
-                  showToast(`已切换到「${item.name}」`);
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-hover",
-                  item.id === vaultId && "bg-accent-soft",
-                )}
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-hover text-[9px] font-semibold text-muted">
-                  {item.name.slice(0, 1)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[11.5px] text-ink">
-                    {item.name}
-                  </span>
-                  <span className="block text-[9.5px] text-faint">
-                    {item.description}
-                  </span>
-                </span>
-                {item.id === vaultId ? (
-                  <Check size={13} className="shrink-0 text-accent" />
-                ) : null}
-              </button>
-            ))}
+            {vault ? (
+              <div className="px-2 py-1.5">
+                <p className="truncate text-[11px] font-medium text-ink">
+                  {vault.name}
+                </p>
+                <p className="mt-0.5 line-clamp-2 break-all font-mono text-[9px] leading-relaxed text-faint">
+                  {vault.root}
+                </p>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setVaultOpen(false);
+                openVaultPicker();
+              }}
+              className="mt-0.5 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11.5px] text-muted transition-colors hover:bg-hover hover:text-ink"
+            >
+              <FolderOpen size={13} className="shrink-0" />
+              切换知识库…
+            </button>
           </div>
         ) : null}
       </div>

@@ -3,5 +3,20 @@
   "identifier": "default",
   "description": "Wikloom 主窗口的默认权限",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "fs:read-dirs",
+    "fs:read-files",
+    "fs:write-all",
+    "fs:allow-read-dir",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-stat",
+    "fs:allow-lstat"
+  ]
 }
