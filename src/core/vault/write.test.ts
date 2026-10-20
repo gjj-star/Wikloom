@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FileSystemPort } from "../fs/types";
-import { splitFrontmatter } from "./frontmatter";
+import { sanitizeFileStem, splitFrontmatter } from "./frontmatter";
 import {
   createNoteWithContent,
   normalizeNoteFolder,
@@ -76,6 +76,15 @@ describe("note paths", () => {
     expect(notePathForTitle("ai", "What: is / recursion?")).toBe(
       "ai/What- is - recursion-.md",
     );
+  });
+
+  it("adds a suffix to Windows reserved device names", () => {
+    for (const value of ["con", "CON", "nul", "aux", "prn", "com1", "LPT9"]) {
+      expect(sanitizeFileStem(value).toLowerCase()).toMatch(/-note$/);
+    }
+    expect(sanitizeFileStem("con.foo")).toBe("con-note.foo");
+    expect(sanitizeFileStem("console")).toBe("console");
+    expect(notePathForTitle("", "con")).toBe("con-note.md");
   });
 });
 

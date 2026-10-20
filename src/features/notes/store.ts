@@ -24,6 +24,11 @@ export type NotesStatus =
   | "error";
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
+export interface CreateNoteOptions {
+  /** 建链流程要在来源笔记里继续操作，默认仍切到新笔记。 */
+  selectNew?: boolean;
+}
+
 const VAULT_KEY = "wikloom:vault";
 const SAVE_DELAY = 800;
 
@@ -85,6 +90,10 @@ interface NotesState {
   setTagFilter: (tag: string | null) => void;
 
   createNote: () => Promise<string | null>;
+  createNoteFromContent: (
+    input: NewNoteContent,
+    options?: CreateNoteOptions,
+  ) => Promise<Note>;
   createGeneratedNote: (input: NewNoteContent) => Promise<Note>;
   updateContent: (id: string, content: string) => void;
   updateTags: (id: string, tags: string[]) => void;
@@ -276,13 +285,13 @@ export const useNotesStore = create<NotesState>((set, get) => {
       }
     },
 
-    async createGeneratedNote(input) {
+    async createNoteFromContent(input, options) {
       const vault = get().vault;
       const fs = activeFs;
       if (!vault || !fs) {
         throw new VaultError(
           "WRITE_FAILED",
-          "知识库还没有准备好，暂时不能写入生成结果。",
+          "知识库还没有准备好，暂时不能写入新笔记。",
         );
       }
 
@@ -293,16 +302,21 @@ export const useNotesStore = create<NotesState>((set, get) => {
         get().notes,
         input,
       );
+      const selectNew = options?.selectNew !== false;
       set((state) => ({
         notes: [note, ...state.notes],
-        selectedId: note.id,
-        query: "",
-        tagFilter: null,
-        saveState: "saved",
-        lastSavedAt: note.updatedAt,
-        saveError: null,
+        selectedId: selectNew ? note.id : state.selectedId,
+        query: selectNew ? "" : state.query,
+        tagFilter: selectNew ? null : state.tagFilter,
+        saveState: selectNew ? "saved" : state.saveState,
+        lastSavedAt: selectNew ? note.updatedAt : state.lastSavedAt,
+        saveError: selectNew ? null : state.saveError,
       }));
       return note;
+    },
+
+    async createGeneratedNote(input) {
+      return get().createNoteFromContent(input);
     },
 
     updateContent(id, content) {

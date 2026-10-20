@@ -3,7 +3,6 @@ import { createNote } from "./actions";
 import { readRoute } from "./router";
 import {
   isTauriRuntime,
-  setDefaultContextMenus,
 } from "../core/fs/runtime";
 import { Shell } from "./Shell";
 import { useUiStore } from "./uiStore";
@@ -20,9 +19,9 @@ export function App() {
   const paletteOpen = useUiStore((state) => state.paletteOpen);
   const generateOpen = useUiStore((state) => state.generateOpen);
   const inlineActionOpen = useUiStore((state) => state.inlineActionOpen);
+  const clipOpen = useUiStore((state) => state.clipOpen);
+  const linkNoteOpen = useUiStore((state) => state.linkNoteOpen);
   const backlinksOpen = useUiStore((state) => state.backlinksOpen);
-  const route = useUiStore((state) => state.route);
-  const mode = useUiStore((state) => state.mode);
   const setRoute = useUiStore((state) => state.setRoute);
 
   const status = useNotesStore((state) => state.status);
@@ -102,17 +101,8 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    // 默认菜单在运行时关闭；只有笔记编辑态临时打开，给 CodeMirror 用。
-    // 不在建窗时关闭：WebView2 首次导航前关掉后，再打开也不会恢复原生菜单。
-    void setDefaultContextMenus(route === "notes" && mode === "edit");
-  }, [route, mode]);
-
-  useEffect(() => {
-    // WebView2 的默认菜单在 Rust 侧运行时关闭；这里再兜一层。
-    // 编辑器例外：CodeMirror 6 没有自己的右键菜单，只能用 WebView2 原生编辑菜单。
+    // 原生菜单已在 Rust 侧常关；这里再兜一层，避免浏览器演示版弹出默认菜单。
     const onContextMenu = (event: MouseEvent) => {
-      const target = event.target;
-      if (target instanceof Element && target.closest(".cm-editor")) return;
       event.preventDefault();
     };
     document.addEventListener("contextmenu", onContextMenu);
@@ -121,8 +111,8 @@ export function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      // 生成对话框打开时，快捷键交给对话框自己处理，避免同时触发新建/切模式。
-      if (generateOpen || inlineActionOpen) return;
+      // 生成/剪藏/建链对话框打开时，快捷键交给对话框自己处理。
+      if (generateOpen || inlineActionOpen || clipOpen || linkNoteOpen) return;
 
       const mod = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
@@ -156,7 +146,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [paletteOpen, generateOpen, inlineActionOpen, backlinksOpen]);
+  }, [paletteOpen, generateOpen, inlineActionOpen, clipOpen, linkNoteOpen, backlinksOpen]);
 
   let content;
   if (status === "idle" || (status === "loading" && noteCount === 0)) {

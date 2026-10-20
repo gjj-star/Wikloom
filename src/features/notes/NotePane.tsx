@@ -1,17 +1,26 @@
-import { useEffect, useMemo, type CSSProperties } from "react";
+﻿import {
+  useEffect,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   AlertTriangle,
   BookOpen,
   Check,
   ChevronRight,
+  Copy,
   FileText,
   Link2,
   Loader2,
+  Maximize2,
   Pencil,
   Plus,
   Sparkles,
 } from "lucide-react";
 import { getBacklinks } from "../../core/links/backlinks";
+import { writeClipboardText } from "../../core/clipboard";
 import type { EditorMode } from "../../app/uiStore";
 import { useUiStore } from "../../app/uiStore";
 import { modKey } from "../../core/platform";
@@ -23,13 +32,17 @@ import {
   saveActiveNote,
 } from "../../app/actions";
 import { Button } from "../../ui/Button";
+import { openContextMenu } from "../../ui/ContextMenu";
 import { cn } from "../../ui/cn";
 import { EmptyState } from "../../ui/EmptyState";
 import { Kbd } from "../../ui/Kbd";
 import { Segmented } from "../../ui/Segmented";
 import { Skeleton } from "../../ui/Skeleton";
 import { CodeEditor } from "../editor/CodeEditor";
-import { getEditorSelection } from "../editor/editorBridge";
+import {
+  getEditorSelection,
+  selectTextInActiveEditor,
+} from "../editor/editorBridge";
 import { MarkdownView } from "../editor/MarkdownView";
 import { TagProperties } from "./TagProperties";
 import { useNotesStore } from "./store";
@@ -110,6 +123,33 @@ export function NotePane() {
 
   const loading = status === "loading" || status === "idle";
   const proseStyle = { "--prose-size": `${proseSize}px` } as CSSProperties;
+  const articleRef = useRef<HTMLElement>(null);
+  const pendingReadingLinkRef = useRef<{
+    text: string;
+    occurrence: number;
+  } | null>(null);
+
+  useEffect(() => {
+    pendingReadingLinkRef.current = null;
+  }, [note?.id]);
+
+  // 阅读态发起建链：切到编辑态、找回同一处文字，再打开对话框。
+  useEffect(() => {
+    if (mode !== "edit" || !pendingReadingLinkRef.current) return;
+    const pending = pendingReadingLinkRef.current;
+    const frame = window.requestAnimationFrame(() => {
+      if (pendingReadingLinkRef.current !== pending) return;
+      pendingReadingLinkRef.current = null;
+      if (selectTextInActiveEditor(pending.text, pending.occurrence)) {
+        useUiStore.getState().openLinkNote();
+      } else {
+        useUiStore
+          .getState()
+          .showToast("原文里找不到刚才选中的文字，可能已被修改。", "error");
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [mode, note?.id]);
 
   function openInlineActions() {
     const selection = getEditorSelection();
@@ -120,6 +160,84 @@ export function NotePane() {
       return;
     }
     useUiStore.getState().openInlineAction();
+  }
+
+  function openLinkNoteFromSelection() {
+    const selection = getEditorSelection();
+    if (!selection?.text.trim()) {
+      useUiStore
+        .getState()
+        .showToast("先在正文里选中一段文字，再创建双链笔记。");
+      return;
+    }
+    useUiStore.getState().openLinkNote();
+  }
+
+  async function copyReadingSelection(text: string): Promise<void> {
+    try {
+      await writeClipboardText(text);
+      useUiStore.getState().showToast("已复制");
+    } catch (error) {
+      useUiStore
+        .getState()
+        .showToast(
+          `复制失败：${error instanceof Error ? error.message : String(error)}`,
+          "error",
+        );
+    }
+  }
+
+  function selectReadingAll(): void {
+    const root = articleRef.current;
+    if (!root) return;
+    const range = document.createRange();
+    range.selectNodeContents(root);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  function handleReadingContextMenu(event: ReactMouseEvent<HTMLElement>) {
+    const domSelection = window.getSelection();
+    const selected = domSelection?.toString().trim() ?? "";
+    if (!selected) {
+      event.preventDefault();
+      return;
+    }
+
+    let occurrence = 0;
+    if (
+      domSelection &&
+      domSelection.rangeCount > 0 &&
+      articleRef.current
+    ) {
+      const range = domSelection.getRangeAt(0);
+      const prefix = document.createRange();
+      prefix.selectNodeContents(articleRef.current);
+      prefix.setEnd(range.startContainer, range.startOffset);
+      occurrence = prefix.toString().split(selected).length - 1;
+    }
+
+    openContextMenu(event, [
+      {
+        label: "创建双链笔记…",
+        icon: <Link2 size={13} />,
+        onSelect: () => {
+          pendingReadingLinkRef.current = { text: selected, occurrence };
+          setMode("edit");
+        },
+      },
+      {
+        label: "复制",
+        icon: <Copy size={13} />,
+        onSelect: () => void copyReadingSelection(selected),
+      },
+      {
+        label: "全选",
+        icon: <Maximize2 size={13} />,
+        onSelect: selectReadingAll,
+      },
+    ]);
   }
 
   return (
@@ -178,6 +296,16 @@ export function NotePane() {
 
           {mode === "edit" && note ? (
             <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="border border-line"
+                icon={<Link2 size={12} />}
+                title="选中文字，生成一篇双链笔记"
+                onClick={openLinkNoteFromSelection}
+              >
+                建链笔记
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -288,6 +416,8 @@ export function NotePane() {
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <article
+            ref={articleRef}
+            onContextMenu={handleReadingContextMenu}
             className="mx-auto w-full max-w-[780px] px-10 pb-32 pt-11"
             style={proseStyle}
           >

@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useMemo,
   useRef,
@@ -19,6 +19,10 @@ import {
   X,
 } from "lucide-react";
 import { buildFullNotePrompt, findMode, mergeModes, resolveMode } from "../../core/ai/prompt";
+import {
+  modeDisplayDescription,
+  modeDisplayName,
+} from "../../core/ai/modeCopy";
 import { getProvider, providerModel } from "../../core/ai/providers";
 import {
   classifyGenerationError,
@@ -325,14 +329,14 @@ export function GenerateNoteDialog() {
               >
                 {modes.map((mode) => (
                   <option key={mode.id} value={mode.id}>
-                    {mode.name}
+                    {modeDisplayName(mode)}
                     {mode.custom ? "（自定义）" : ""}
                   </option>
                 ))}
               </select>
-              {selectedMode.description ? (
+              {modeDisplayDescription(selectedMode) ? (
                 <p className="text-[10px] leading-relaxed text-faint">
-                  {selectedMode.description}
+                  {modeDisplayDescription(selectedMode)}
                 </p>
               ) : null}
             </div>
@@ -414,7 +418,7 @@ export function GenerateNoteDialog() {
               正在生成笔记
             </h3>
             <p className="mx-auto mt-1 max-w-[420px] break-words text-[11.5px] leading-relaxed text-muted">
-              {selectedMode.name} · {topic.trim()}
+              {modeDisplayName(selectedMode)} · {topic.trim()}
             </p>
             <p className="mt-2 text-[10.5px] text-faint">
               生成期间不会写入任何文件。
@@ -447,7 +451,7 @@ export function GenerateNoteDialog() {
                 预览生成结果
               </h3>
               <span className="ml-auto text-[10px] text-faint">
-                {selectedMode.name}
+                {modeDisplayName(selectedMode)}
               </span>
             </div>
 

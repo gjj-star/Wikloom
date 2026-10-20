@@ -1,4 +1,5 @@
 mod ai;
+mod clipper;
 
 use std::path::{Path, PathBuf};
 use tauri::Manager;
@@ -120,8 +121,7 @@ fn get_saved_vault(app: tauri::AppHandle) -> Option<String> {
     Some(path.to_string_lossy().to_string())
 }
 
-/// 运行时开关 WebView2 自带右键菜单；只有笔记编辑态打开，
-/// 让 CodeMirror 继续用系统原生的剪切/复制/粘贴/全选。
+/// 关闭 WebView2 自带右键菜单；全应用的右键菜单统一由 React 组件绘制。
 #[cfg(windows)]
 fn apply_default_context_menus(
     window: &tauri::WebviewWindow,
@@ -148,33 +148,23 @@ fn apply_default_context_menus(
     Ok(())
 }
 
-#[tauri::command]
-fn set_default_context_menus(
-    app: tauri::AppHandle,
-    enabled: bool,
-) -> Result<(), String> {
-    let window = app
-        .get_webview_window("main")
-        .ok_or_else(|| "主窗口不存在。".to_string())?;
-    apply_default_context_menus(&window, enabled)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(ai::AiState::default())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             pick_vault,
             pick_ai_cli,
             get_saved_vault,
-            set_default_context_menus,
             ai::ai_run,
             ai::ai_cancel,
             ai::ai_detect,
             ai::ai_ollama,
-            ai::ai_ollama_detect
+            ai::ai_ollama_detect,
+            clipper::clip_fetch
         ])
         .setup(|app| {
             let data_dir = std::env::var_os("WIKLOOM_WEBVIEW_DATA_DIR")
@@ -188,7 +178,7 @@ pub fn run() {
                 let _ = grant_directory(app.handle(), &saved);
             }
 
-            tauri::WebviewWindowBuilder::new(
+            let window = tauri::WebviewWindowBuilder::new(
                 app,
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
@@ -198,6 +188,9 @@ pub fn run() {
             .min_inner_size(960.0, 600.0)
             .data_directory(data_dir)
             .build()?;
+
+            // 原生右键菜单常关；所有菜单由前端 ContextMenu 统一绘制。
+            let _ = apply_default_context_menus(&window, false);
 
             Ok(())
         })

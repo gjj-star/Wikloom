@@ -54,6 +54,8 @@ interface UiState {
   paletteOpen: boolean;
   generateOpen: boolean;
   inlineActionOpen: boolean;
+  clipOpen: boolean;
+  linkNoteOpen: boolean;
   backlinksOpen: boolean;
   vaultPickerOpen: boolean;
   theme: Theme;
@@ -73,6 +75,12 @@ interface UiState {
 
   openInlineAction: () => void;
   closeInlineAction: () => void;
+
+  openClip: () => void;
+  closeClip: () => void;
+
+  openLinkNote: () => void;
+  closeLinkNote: () => void;
 
   setBacklinksOpen: (open: boolean) => void;
   toggleBacklinks: () => void;
@@ -98,6 +106,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   paletteOpen: false,
   generateOpen: false,
   inlineActionOpen: false,
+  clipOpen: false,
+  linkNoteOpen: false,
   backlinksOpen: false,
   vaultPickerOpen: false,
   theme: readTheme(),
@@ -128,6 +138,12 @@ export const useUiStore = create<UiState>((set, get) => ({
   openInlineAction: () =>
     set({ inlineActionOpen: true, paletteOpen: false }),
   closeInlineAction: () => set({ inlineActionOpen: false }),
+
+  openClip: () => set({ clipOpen: true, paletteOpen: false }),
+  closeClip: () => set({ clipOpen: false }),
+
+  openLinkNote: () => set({ linkNoteOpen: true, paletteOpen: false }),
+  closeLinkNote: () => set({ linkNoteOpen: false }),
 
   setBacklinksOpen: (open) => set({ backlinksOpen: open }),
   toggleBacklinks: () => set((state) => ({ backlinksOpen: !state.backlinksOpen })),

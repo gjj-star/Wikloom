@@ -94,6 +94,18 @@ export function titleFromPath(filePath: string): string {
   return name.replace(/\.md$/i, "").trim();
 }
 
+/** Windows 保留设备名；带扩展名时按第一个点前的主名判断。 */
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
+function avoidWindowsReservedName(stem: string): string {
+  const dot = stem.indexOf(".");
+  const base = dot === -1 ? stem : stem.slice(0, dot);
+  if (!WINDOWS_RESERVED.test(base)) return stem;
+  const suffix = dot === -1 ? "" : stem.slice(dot);
+  const fixedBase = `${base.slice(0, 75)}-note`;
+  return `${fixedBase}${suffix}`;
+}
+
 /** 文件名里不能出现的字符，替换掉；中文和空格保留。 */
 export function sanitizeFileStem(value: string): string {
   const cleaned = value
@@ -102,5 +114,5 @@ export function sanitizeFileStem(value: string): string {
     .replace(/^[.\s]+|[.\s]+$/g, "")
     .slice(0, 80)
     .trim();
-  return cleaned || "未命名笔记";
+  return cleaned ? avoidWindowsReservedName(cleaned) : "未命名笔记";
 }

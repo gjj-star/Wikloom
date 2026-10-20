@@ -89,11 +89,20 @@ export function CommandPalette() {
       },
       {
         key: "generate-note",
-        label: "生成笔记",
+        label: "整篇生成（实验）",
         hint: "AI",
         icon: <Sparkles size={14} />,
         run: () => {
           useUiStore.getState().openGenerate();
+        },
+      },
+      {
+        key: "link-note",
+        label: "选词建链笔记…",
+        hint: "选中文本",
+        icon: <Link2 size={14} />,
+        run: () => {
+          useUiStore.getState().openLinkNote();
         },
       },
       {
@@ -153,13 +162,12 @@ export function CommandPalette() {
         },
       },
       {
-        key: "open-clipper",
-        label: "打开剪藏",
+        key: "clip-web",
+        label: "剪藏网页…",
+        hint: "URL",
         icon: <Scissors size={14} />,
         run: () => {
-          const ui = useUiStore.getState();
-          ui.closePalette();
-          ui.navigate("clipper");
+          useUiStore.getState().openClip();
         },
       },
       {

@@ -131,17 +131,17 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
               onContextMenu={(event) => {
                 openContextMenu(event, [
                   {
-                    label: "复制链接",
-                    icon: <Copy size={13} />,
-                    onSelect: () => void copyText(`[[${target}]]`, "已复制链接"),
-                  },
-                  {
-                    label: "打开",
+                    label: "打开链接",
                     icon: <FileText size={13} />,
                     disabled: !exists,
                     onSelect: () => {
                       if (exists) openNoteByTitle(target);
                     },
+                  },
+                  {
+                    label: "复制链接",
+                    icon: <Copy size={13} />,
+                    onSelect: () => void copyText(`[[${target}]]`, "已复制链接"),
                   },
                 ]);
               }}
@@ -160,13 +160,7 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
             onContextMenu={(event) => {
               openContextMenu(event, [
                 {
-                  label: "复制链接",
-                  icon: <Copy size={13} />,
-                  disabled: !link,
-                  onSelect: () => void copyText(link, "已复制链接"),
-                },
-                {
-                  label: "打开",
+                  label: "打开链接",
                   icon: <ExternalLink size={13} />,
                   disabled: !link,
                   onSelect: () => {
@@ -174,6 +168,12 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
                       window.open(link, "_blank", "noopener,noreferrer");
                     }
                   },
+                },
+                {
+                  label: "复制链接",
+                  icon: <Copy size={13} />,
+                  disabled: !link,
+                  onSelect: () => void copyText(link, "已复制链接"),
                 },
               ]);
             }}

@@ -14,6 +14,8 @@ export interface ContextMenuItem {
   icon?: ReactNode;
   onSelect: () => void;
   disabled?: boolean;
+  /** 在这一项前面画一条分隔线。 */
+  separatorBefore?: boolean;
 }
 
 export interface ContextMenuState {
@@ -184,27 +186,31 @@ export function ContextMenuHost() {
       className="fixed z-[80] min-w-[176px] overflow-hidden rounded-xl border border-line bg-card p-1 shadow-[var(--c-shadow)] outline-none"
     >
       {state.items.map((item, index) => (
-        <button
-          key={`${item.label}-${index}`}
-          type="button"
-          role="menuitem"
-          disabled={item.disabled}
-          onClick={() => {
-            if (item.disabled) return;
-            closeContextMenu();
-            item.onSelect();
-          }}
-          className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11.5px] text-muted transition-colors",
-            "hover:bg-hover hover:text-ink focus:bg-hover focus:text-ink focus:outline-none",
-            "disabled:pointer-events-none disabled:opacity-40",
-          )}
-        >
-          {item.icon ? (
-            <span className="shrink-0 text-faint">{item.icon}</span>
+        <div key={`${item.label}-${index}`}>
+          {item.separatorBefore ? (
+            <div role="separator" className="my-1 h-px bg-line" />
           ) : null}
-          <span className="truncate">{item.label}</span>
-        </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={item.disabled}
+            onClick={() => {
+              if (item.disabled) return;
+              closeContextMenu();
+              item.onSelect();
+            }}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11.5px] text-muted transition-colors",
+              "hover:bg-hover hover:text-ink focus:bg-hover focus:text-ink focus:outline-none",
+              "disabled:pointer-events-none disabled:opacity-40",
+            )}
+          >
+            {item.icon ? (
+              <span className="shrink-0 text-faint">{item.icon}</span>
+            ) : null}
+            <span className="truncate">{item.label}</span>
+          </button>
+        </div>
       ))}
     </div>,
     document.body,

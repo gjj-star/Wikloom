@@ -7,7 +7,6 @@ import {
   Plus,
   Scissors,
   Settings,
-  Sparkles,
   Sun,
   Tags as TagsIcon,
 } from "lucide-react";
@@ -69,7 +68,8 @@ export function Sidebar() {
   const theme = useUiStore((state) => state.theme);
   const toggleTheme = useUiStore((state) => state.toggleTheme);
   const openVaultPicker = useUiStore((state) => state.openVaultPicker);
-  const openGenerate = useUiStore((state) => state.openGenerate);
+  const clipOpen = useUiStore((state) => state.clipOpen);
+  const openClip = useUiStore((state) => state.openClip);
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultRef = useRef<HTMLDivElement>(null);
 
@@ -120,18 +120,6 @@ export function Sidebar() {
             <Kbd>N</Kbd>
           </span>
         </button>
-
-        <button
-          type="button"
-          onClick={openGenerate}
-          className="mt-1.5 flex h-8 w-full items-center gap-2 rounded-lg border border-accent/25 bg-accent-soft px-2.5 text-[11.5px] font-medium text-accent shadow-[var(--c-shadow-soft)] transition-colors hover:border-accent/40 hover:bg-accent/15"
-        >
-          <Sparkles size={14} />
-          <span>生成笔记</span>
-          <span className="ml-auto rounded bg-card/70 px-1 py-0.5 text-[9px] uppercase tracking-wide text-accent">
-            AI
-          </span>
-        </button>
       </div>
 
       <nav className="mt-5 flex-1 px-2">
@@ -142,22 +130,22 @@ export function Sidebar() {
           icon={<Library size={15} />}
           label="全部笔记"
           count={notes.length}
-          active={route === "notes"}
+          active={route === "notes" && !clipOpen}
           onClick={openAllNotes}
         />
         <NavItem
           icon={<TagsIcon size={15} />}
           label="标签"
           count={tagCount}
-          active={route === "tags"}
+          active={route === "tags" && !clipOpen}
           onClick={() => navigate("tags")}
         />
         <NavItem
           icon={<Scissors size={15} />}
           label="剪藏"
-          badge="M3"
-          active={route === "clipper"}
-          onClick={() => navigate("clipper")}
+          badge="M4"
+          active={clipOpen}
+          onClick={openClip}
         />
       </nav>
 
