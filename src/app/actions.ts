@@ -54,6 +54,32 @@ export function openAllNotes(): void {
   useUiStore.getState().navigate("notes");
 }
 
+export async function copyText(
+  text: string,
+  message = "已复制",
+): Promise<void> {
+  const ui = useUiStore.getState();
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const copied = document.execCommand("copy");
+      area.remove();
+      if (!copied) throw new Error("copy command failed");
+    }
+    ui.showToast(message, "success");
+  } catch {
+    ui.showToast("复制失败，剪贴板不可用。", "error");
+  }
+}
+
 export function selectTag(tag: string): void {
   useNotesStore.getState().setTagFilter(tag);
   useUiStore.getState().navigate("notes");

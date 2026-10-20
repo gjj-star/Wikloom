@@ -27,9 +27,9 @@ import { EmptyState } from "../../ui/EmptyState";
 import { Kbd } from "../../ui/Kbd";
 import { Segmented } from "../../ui/Segmented";
 import { Skeleton } from "../../ui/Skeleton";
-import { Tag } from "../../ui/Tag";
 import { CodeEditor } from "../editor/CodeEditor";
 import { MarkdownView } from "../editor/MarkdownView";
+import { TagProperties } from "./TagProperties";
 import { useNotesStore } from "./store";
 
 function stripLeadingTitle(content: string, title: string): string {
@@ -176,6 +176,8 @@ export function NotePane() {
         </div>
       </header>
 
+      {note && status === "ready" ? <TagProperties note={note} /> : null}
+
       {loading ? (
         <ArticleSkeleton />
       ) : status === "error" ? (
@@ -264,14 +266,6 @@ export function NotePane() {
             className="mx-auto w-full max-w-[780px] px-10 pb-32 pt-11"
             style={proseStyle}
           >
-            {note.tags.length > 0 ? (
-              <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                {note.tags.map((tag) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))}
-              </div>
-            ) : null}
-
             <h1 className="text-[30px] font-semibold leading-[1.25] tracking-[-0.02em] text-ink">
               {note.title}
             </h1>

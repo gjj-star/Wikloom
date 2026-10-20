@@ -9,6 +9,7 @@ import { isTauriRuntime } from "../../core/fs/runtime";
 import { createTauriFileSystem } from "../../core/fs/tauriFs";
 import type { Note } from "../../core/notes/types";
 import { displayNameFromRoot } from "../../core/paths";
+import { normalizeTags } from "../../core/vault/frontmatter";
 import { VaultError, toVaultError } from "../../core/vault/errors";
 import { scanVault, type VaultFileError } from "../../core/vault/scan";
 import type { VaultInfo } from "../../core/vault/types";
@@ -84,6 +85,7 @@ interface NotesState {
 
   createNote: () => Promise<string | null>;
   updateContent: (id: string, content: string) => void;
+  updateTags: (id: string, tags: string[]) => void;
   saveNote: (id?: string) => Promise<void>;
   flush: () => Promise<void>;
 }
@@ -144,6 +146,17 @@ export const useNotesStore = create<NotesState>((set, get) => {
         failure,
       });
     }
+  }
+
+  function scheduleSave(id: string): void {
+    pendingNoteId = id;
+    if (saveTimer !== undefined) window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => {
+      saveTimer = undefined;
+      const target = pendingNoteId;
+      pendingNoteId = null;
+      if (target) void get().saveNote(target);
+    }, SAVE_DELAY);
   }
 
   return {
@@ -269,14 +282,29 @@ export const useNotesStore = create<NotesState>((set, get) => {
         saveState: state.saveState === "saving" ? "saving" : "idle",
       }));
 
-      pendingNoteId = id;
-      if (saveTimer !== undefined) window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
-        saveTimer = undefined;
-        const target = pendingNoteId;
-        pendingNoteId = null;
-        if (target) void get().saveNote(target);
-      }, SAVE_DELAY);
+      scheduleSave(id);
+    },
+
+    updateTags(id, tags) {
+      const note = get().notes.find((item) => item.id === id);
+      if (!note) return;
+
+      const normalized = normalizeTags(tags);
+      if (
+        note.tags.length === normalized.length &&
+        note.tags.every((tag, index) => tag === normalized[index])
+      ) {
+        return;
+      }
+
+      set((state) => ({
+        notes: state.notes.map((item) =>
+          item.id === id ? { ...item, tags: normalized } : item,
+        ),
+        saveState: state.saveState === "saving" ? "saving" : "idle",
+      }));
+
+      scheduleSave(id);
     },
 
     async saveNote(requestedId) {

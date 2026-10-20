@@ -52,18 +52,22 @@ export function serializeFrontmatter(
 }
 
 export function normalizeTags(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => (typeof item === "string" ? item.trim() : String(item)))
-      .filter(Boolean);
+  const raw = Array.isArray(value)
+    ? value.map((item) =>
+        typeof item === "string" ? item.trim() : String(item).trim(),
+      )
+    : typeof value === "string"
+      ? value.split(/[,，]/).map((item) => item.trim())
+      : [];
+
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const tag of raw) {
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    tags.push(tag);
   }
-  if (typeof value === "string") {
-    return value
-      .split(/[,，]/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  return [];
+  return tags;
 }
 
 export function toTimestamp(value: unknown, fallback: number): number {

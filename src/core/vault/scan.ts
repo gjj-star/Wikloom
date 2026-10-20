@@ -74,7 +74,13 @@ async function loadNote(
 
   if (typeof data.id !== "string" || !data.id.trim()) dirty = true;
   if (typeof data.title !== "string" || !data.title.trim()) dirty = true;
-  if (data.tags === undefined || !Array.isArray(data.tags)) dirty = true;
+  // tags 是可选字段：缺失是合法的；只有类型不对或空数组才需要清理。
+  if (
+    data.tags !== undefined &&
+    (!Array.isArray(data.tags) || data.tags.length === 0)
+  ) {
+    dirty = true;
+  }
   if (data.created === undefined) dirty = true;
   if (data.updated === undefined) dirty = true;
 
@@ -103,7 +109,7 @@ async function loadNote(
     title,
     created: data.created ?? new Date(createdAt).toISOString(),
     updated: data.updated ?? new Date(updatedAt).toISOString(),
-    tags,
+    ...(tags.length > 0 ? { tags } : {}),
     ...extra,
   };
 

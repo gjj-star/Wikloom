@@ -13,12 +13,13 @@ import ReactMarkdown, {
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { Check, Copy } from "lucide-react";
-import { openNoteByTitle } from "../../app/actions";
+import { Check, Copy, ExternalLink, FileText } from "lucide-react";
+import { copyText, openNoteByTitle } from "../../app/actions";
 import { useNotesStore } from "../notes/store";
 import { preprocessWikiLinks } from "../../core/links/wikiLinks";
 import { rehypeStyleToObject } from "../../core/markdown/rehypeStyleToObject";
 import { cn } from "../../ui/cn";
+import { openContextMenu } from "../../ui/ContextMenu";
 
 function extractText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -127,14 +128,56 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
               onClick={() => {
                 if (exists) openNoteByTitle(target);
               }}
+              onContextMenu={(event) => {
+                openContextMenu(event, [
+                  {
+                    label: "复制链接",
+                    icon: <Copy size={13} />,
+                    onSelect: () => void copyText(`[[${target}]]`, "已复制链接"),
+                  },
+                  {
+                    label: "打开",
+                    icon: <FileText size={13} />,
+                    disabled: !exists,
+                    onSelect: () => {
+                      if (exists) openNoteByTitle(target);
+                    },
+                  },
+                ]);
+              }}
             >
               {children}
             </button>
           );
         }
 
+        const link = href ?? "";
         return (
-          <a href={href} target="_blank" rel="noreferrer noopener">
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            onContextMenu={(event) => {
+              openContextMenu(event, [
+                {
+                  label: "复制链接",
+                  icon: <Copy size={13} />,
+                  disabled: !link,
+                  onSelect: () => void copyText(link, "已复制链接"),
+                },
+                {
+                  label: "打开",
+                  icon: <ExternalLink size={13} />,
+                  disabled: !link,
+                  onSelect: () => {
+                    if (link) {
+                      window.open(link, "_blank", "noopener,noreferrer");
+                    }
+                  },
+                },
+              ]);
+            }}
+          >
             {children}
           </a>
         );

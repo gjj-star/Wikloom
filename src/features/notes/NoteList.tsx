@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import {
   AlertTriangle,
+  Copy,
   FileText,
+  Pencil,
   Plus,
   Search,
   SearchX,
@@ -11,9 +13,11 @@ import type { Note } from "../../core/notes/types";
 import { searchNotes } from "../../core/search/searchNotes";
 import { excerpt } from "../../core/text/plainText";
 import { relativeTime } from "../../core/time/relativeTime";
-import { createNote, openNote } from "../../app/actions";
+import { copyText, createNote, openNote } from "../../app/actions";
+import { useUiStore } from "../../app/uiStore";
 import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
+import { openContextMenu } from "../../ui/ContextMenu";
 import { EmptyState } from "../../ui/EmptyState";
 import { IconButton } from "../../ui/IconButton";
 import { Skeleton } from "../../ui/Skeleton";
@@ -22,11 +26,38 @@ import { useNotesStore } from "./store";
 
 function NoteListItem({ note, selected }: { note: Note; selected: boolean }) {
   const summary = excerpt(note.content, 96);
+  const mode = useUiStore((state) => state.mode);
+
+  function handleContextMenu(event: ReactMouseEvent<HTMLButtonElement>) {
+    openContextMenu(event, [
+      {
+        label: "打开",
+        icon: <FileText size={13} />,
+        onSelect: () => openNote(note.id),
+      },
+      {
+        label:
+          selected && mode === "edit" ? "切换到阅读" : "切换编辑态",
+        icon: <Pencil size={13} />,
+        onSelect: () =>
+          openNote(note.id, {
+            mode:
+              selected && mode === "edit" ? "read" : "edit",
+          }),
+      },
+      {
+        label: "复制标题",
+        icon: <Copy size={13} />,
+        onSelect: () => void copyText(note.title, "已复制标题"),
+      },
+    ]);
+  }
 
   return (
     <button
       type="button"
       onClick={() => openNote(note.id)}
+      onContextMenu={handleContextMenu}
       aria-current={selected ? "true" : undefined}
       className={cn(
         "group relative block w-full border-b border-line/70 px-4 py-3 text-left transition-colors",

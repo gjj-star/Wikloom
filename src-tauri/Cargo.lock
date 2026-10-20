@@ -3955,7 +3955,7 @@ dependencies = [
 
 [[package]]
 name = "wikloom"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -3963,6 +3963,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
+ "webview2-com",
 ]
 
 [[package]]

@@ -1,11 +1,18 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { FileText, Link2, X } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
+import { Copy, FileText, Link2, X } from "lucide-react";
 import type { Backlink } from "../../core/links/backlinks";
 import { getBacklinks } from "../../core/links/backlinks";
 import { relativeTime } from "../../core/time/relativeTime";
-import { openNote } from "../../app/actions";
+import { copyText, openNote } from "../../app/actions";
 import { useUiStore } from "../../app/uiStore";
 import { cn } from "../../ui/cn";
+import { openContextMenu } from "../../ui/ContextMenu";
 import { EmptyState } from "../../ui/EmptyState";
 import { IconButton } from "../../ui/IconButton";
 import { useNotesStore } from "../notes/store";
@@ -25,10 +32,26 @@ function highlightSnippet(snippet: string, term: string): ReactNode {
 }
 
 function BacklinkRow({ item, term }: { item: Backlink; term: string }) {
+  function handleContextMenu(event: ReactMouseEvent<HTMLButtonElement>) {
+    openContextMenu(event, [
+      {
+        label: "复制链接",
+        icon: <Copy size={13} />,
+        onSelect: () => void copyText(`[[${item.note.title}]]`, "已复制链接"),
+      },
+      {
+        label: "打开",
+        icon: <FileText size={13} />,
+        onSelect: () => openNote(item.note.id, { mode: "read" }),
+      },
+    ]);
+  }
+
   return (
     <button
       type="button"
       onClick={() => openNote(item.note.id, { mode: "read" })}
+      onContextMenu={handleContextMenu}
       className="group w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-hover"
     >
       <div className="flex items-center gap-1.5">

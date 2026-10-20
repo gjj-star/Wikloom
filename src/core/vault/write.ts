@@ -11,7 +11,8 @@ export function serializeNote(note: Note): string {
     title: note.title,
     created: new Date(note.createdAt).toISOString(),
     updated: new Date(note.updatedAt).toISOString(),
-    tags: note.tags,
+    // 空标签不写成 `tags: []`，删光后 frontmatter 里不留空壳。
+    ...(note.tags.length > 0 ? { tags: note.tags } : {}),
     ...note.extra,
   };
   return serializeFrontmatter(data, note.content);

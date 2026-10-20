@@ -99,12 +99,55 @@ fn get_saved_vault(app: tauri::AppHandle) -> Option<String> {
     Some(path.to_string_lossy().to_string())
 }
 
+/// 运行时开关 WebView2 自带右键菜单；只有笔记编辑态打开，
+/// 让 CodeMirror 继续用系统原生的剪切/复制/粘贴/全选。
+#[cfg(windows)]
+fn apply_default_context_menus(
+    window: &tauri::WebviewWindow,
+    enabled: bool,
+) -> Result<(), String> {
+    window
+        .with_webview(move |webview| {
+            unsafe {
+                if let Ok(core) = webview.controller().CoreWebView2() {
+                    if let Ok(settings) = core.Settings() {
+                        let _ = settings.SetAreDefaultContextMenusEnabled(enabled);
+                    }
+                }
+            }
+        })
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(not(windows))]
+fn apply_default_context_menus(
+    _window: &tauri::WebviewWindow,
+    _enabled: bool,
+) -> Result<(), String> {
+    Ok(())
+}
+
+#[tauri::command]
+fn set_default_context_menus(
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "主窗口不存在。".to_string())?;
+    apply_default_context_menus(&window, enabled)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![pick_vault, get_saved_vault])
+        .invoke_handler(tauri::generate_handler![
+            pick_vault,
+            get_saved_vault,
+            set_default_context_menus
+        ])
         .setup(|app| {
             let data_dir = std::env::var_os("WIKLOOM_WEBVIEW_DATA_DIR")
                 .map(PathBuf::from)
