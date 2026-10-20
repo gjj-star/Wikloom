@@ -330,7 +330,13 @@ export const useNotesStore = create<NotesState>((set, get) => {
         const updatedAt = Date.now();
         await writeNoteFile(fs, vault.root, { ...current, updatedAt });
         const latest = get().notes.find((item) => item.id === id);
-        const stillCurrent = latest?.content === current.content;
+        // 内容或标签在写入途中变了，就不能显示「已保存」；后续防抖会再写一次。
+        const stillCurrent = Boolean(
+          latest &&
+            latest.content === current.content &&
+            latest.tags.length === current.tags.length &&
+            latest.tags.every((tag, index) => tag === current.tags[index]),
+        );
         set((state) => ({
           notes: state.notes.map((item) =>
             item.id === id ? { ...item, updatedAt } : item,

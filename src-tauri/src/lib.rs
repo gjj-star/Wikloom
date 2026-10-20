@@ -1,3 +1,5 @@
+mod ai;
+
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
@@ -141,12 +143,18 @@ fn set_default_context_menus(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(ai::AiState::default())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             pick_vault,
             get_saved_vault,
-            set_default_context_menus
+            set_default_context_menus,
+            ai::ai_run,
+            ai::ai_cancel,
+            ai::ai_detect,
+            ai::ai_ollama,
+            ai::ai_ollama_detect
         ])
         .setup(|app| {
             let data_dir = std::env::var_os("WIKLOOM_WEBVIEW_DATA_DIR")

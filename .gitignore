@@ -22,3 +22,8 @@ src-tauri/gen/
 Thumbs.db
 *.log
 pnpm-debug.log*
+.omc/
+
+# Python（tools/ 脚本运行时产生的缓存）
+__pycache__/
+*.pyc

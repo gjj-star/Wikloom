@@ -129,7 +129,7 @@ export function SettingsPage() {
 
             <p className="mt-3 text-[10.5px] leading-relaxed text-faint">
               扫描时会给没有 frontmatter 的文件补上 id / title / created /
-              updated / tags，并写回磁盘；已有字段不会被覆盖。
+              updated 并写回磁盘；tags 缺失不补，重复或空数组会归一。已有字段不会被覆盖。
             </p>
           </Panel>
 

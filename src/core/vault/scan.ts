@@ -65,6 +65,9 @@ async function loadNote(
       : headingTitle || filenameTitle;
 
   const tags = normalizeTags(data.tags);
+  const rawTags = Array.isArray(data.tags)
+    ? data.tags.map((item) => (typeof item === "string" ? item : String(item)))
+    : [];
   const createdAt = toTimestamp(data.created, fallbackTime);
   const updatedAt = toTimestamp(data.updated, fallbackTime);
 
@@ -74,10 +77,14 @@ async function loadNote(
 
   if (typeof data.id !== "string" || !data.id.trim()) dirty = true;
   if (typeof data.title !== "string" || !data.title.trim()) dirty = true;
-  // tags 是可选字段：缺失是合法的；只有类型不对或空数组才需要清理。
+  // tags 是可选字段：缺失合法；非数组、空数组、重复或未 trim 的标签需要归一。
   if (
     data.tags !== undefined &&
-    (!Array.isArray(data.tags) || data.tags.length === 0)
+    (!Array.isArray(data.tags) ||
+      data.tags.length === 0 ||
+      data.tags.some((item) => typeof item !== "string") ||
+      tags.length !== rawTags.length ||
+      tags.some((tag, index) => tag !== rawTags[index]))
   ) {
     dirty = true;
   }
@@ -133,7 +140,8 @@ async function loadNote(
 /**
  * 递归扫描 vault：
  * - 跳过隐藏目录、符号链接、非 Markdown 文件
- * - 缺 frontmatter 的文件补齐 id / title / created / updated / tags 并写回
+ * - 缺 id / title / created / updated 时补齐并写回；tags 缺失合法，
+ *   但非数组、空数组、重复或未 trim 的 tags 会归一后写回
  * - 单个文件损坏只记录错误，不中断整库
  */
 export async function scanVault(
