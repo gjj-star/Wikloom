@@ -26,7 +26,6 @@ export interface AiSettings {
   customModel: string;
   customArgs: string[];
   defaultModeId: string;
-  enableLogging: boolean;
   customModes: CustomMode[];
 }
 
@@ -46,7 +45,6 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   customModel: "",
   customArgs: [],
   defaultModeId: "",
-  enableLogging: true,
   customModes: [],
 };
 
@@ -113,10 +111,6 @@ export function normalizeAiSettings(value: unknown): AiSettings {
       raw.defaultModeId,
       DEFAULT_AI_SETTINGS.defaultModeId,
     ),
-    enableLogging:
-      typeof raw.enableLogging === "boolean"
-        ? raw.enableLogging
-        : DEFAULT_AI_SETTINGS.enableLogging,
     customModes: normalizeCustomModes(raw.customModes),
   };
 }

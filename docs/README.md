@@ -49,7 +49,8 @@ esbuild bundle 中原样提取的提示词与设置数据，供 Wikloom M3 的 A
   - 15 个 `defaultSettings` 字段
   - `validation.status = "ok"`，`validation.problems = []`
 
-> 两个脚本从 `OBSIDIAN_PLUGIN_DIR` 读输入（也可用第一个命令行参数），输出固定写到
+> `extract_plugin_modes.py` 从 `OBSIDIAN_PLUGIN_DIR` 或第一个命令行参数读输入；
+> `verify_plugin_modes.cjs` 从 `OBSIDIAN_PLUGIN_DIR` 读输入。输出都固定写到
 > `docs/plugin-modes.json`；换机器复核时设好该环境变量即可。
 
 ## 收录范围

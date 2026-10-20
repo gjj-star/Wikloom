@@ -16,6 +16,7 @@ import { useNotesStore } from "../notes/store";
 import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
 import { Panel } from "../../ui/Panel";
+import { AiSettingsPanel } from "./AiSettingsPanel";
 
 const themeOptions: Array<{ value: Theme; label: string; hint: string }> = [
   { value: "light", label: "浅色", hint: "暖纸底 · 钴蓝强调" },
@@ -48,7 +49,7 @@ export function SettingsPage() {
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-6">
         <h1 className="text-[13px] font-semibold text-ink">设置</h1>
         <span className="text-[11px] text-faint">
-          知识库、外观、阅读与关于
+          知识库、AI、外观、阅读与关于
         </span>
       </header>
 
@@ -250,10 +251,12 @@ export function SettingsPage() {
             </p>
           </Panel>
 
+          <AiSettingsPanel />
+
           <Panel title="关于">
             <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-2.5 text-[11.5px]">
               <dt className="text-faint">版本</dt>
-              <dd className="text-ink">v0.2.0 · M2 真实文件系统</dd>
+              <dd className="text-ink">v0.2.1 · M2 真实文件系统 + M3 AI 设置</dd>
               <dt className="text-faint">技术栈</dt>
               <dd className="text-ink">
                 React 19 · Tauri 2 · Tailwind CSS 4 · CodeMirror 6

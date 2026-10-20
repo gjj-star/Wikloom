@@ -87,6 +87,25 @@ async fn pick_vault(app: tauri::AppHandle) -> Result<Option<String>, String> {
     Ok(Some(text))
 }
 
+/// 只让用户通过系统文件框选择 CLI；前端拿结果，不能指定要运行哪个文件。
+#[tauri::command]
+async fn pick_ai_cli(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let dialog_app = app.clone();
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        dialog_app.dialog().file().blocking_pick_file()
+    })
+    .await
+    .map_err(|error| format!("打开文件选择框失败：{error}"))?;
+
+    let Some(file_path) = picked else {
+        return Ok(None);
+    };
+    let selected = file_path
+        .into_path()
+        .map_err(|error| format!("无法读取选择的路径：{error}"))?;
+    Ok(Some(selected.to_string_lossy().to_string()))
+}
+
 #[tauri::command]
 fn get_saved_vault(app: tauri::AppHandle) -> Option<String> {
     let path = saved_vault_path(&app)?;
@@ -148,6 +167,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             pick_vault,
+            pick_ai_cli,
             get_saved_vault,
             set_default_context_menus,
             ai::ai_run,
