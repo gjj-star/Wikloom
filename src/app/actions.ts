@@ -101,6 +101,18 @@ export function openVaultPicker(): void {
   useUiStore.getState().openVaultPicker();
 }
 
+/** 命令面板入口：跳设置并定位到自定义模式面板。 */
+export function openCustomModesSettings(): void {
+  const ui = useUiStore.getState();
+  ui.closePalette();
+  ui.navigate("settings");
+  window.setTimeout(() => {
+    document
+      .getElementById("custom-modes")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 120);
+}
+
 /** 浏览器/测试环境：打开内置内存知识库。 */
 export async function chooseDemoVault(id: string): Promise<boolean> {
   const vault = seedDemoVault(id);

@@ -9,6 +9,7 @@ import {
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { editorHighlighting, editorTheme } from "./editorTheme";
+import { setActiveEditor } from "./editorBridge";
 
 interface CodeEditorProps {
   /** 初始内容；切换笔记时由上层用 key 重挂载。 */
@@ -65,7 +66,11 @@ export function CodeEditor({ value, onChange, onSave }: CodeEditorProps) {
     });
 
     view.focus();
-    return () => view.destroy();
+    setActiveEditor(view);
+    return () => {
+      setActiveEditor(null);
+      view.destroy();
+    };
     // value 只作为初始文档，笔记切换由上层 key 触发重挂载
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

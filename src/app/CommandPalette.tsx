@@ -29,7 +29,7 @@ import { cn } from "../ui/cn";
 import { Dialog } from "../ui/Dialog";
 import { EmptyState } from "../ui/EmptyState";
 import { Kbd } from "../ui/Kbd";
-import { createNote, openNote } from "./actions";
+import { createNote, openCustomModesSettings, openNote } from "./actions";
 import { useUiStore } from "./uiStore";
 import { useNotesStore } from "../features/notes/store";
 
@@ -95,6 +95,21 @@ export function CommandPalette() {
         run: () => {
           useUiStore.getState().openGenerate();
         },
+      },
+      {
+        key: "inline-action",
+        label: "内联 AI 动作",
+        hint: "选中文本",
+        icon: <Sparkles size={14} />,
+        run: () => {
+          useUiStore.getState().openInlineAction();
+        },
+      },
+      {
+        key: "custom-modes",
+        label: "自定义模式…",
+        icon: <Pencil size={14} />,
+        run: openCustomModesSettings,
       },
       {
         key: "toggle-mode",

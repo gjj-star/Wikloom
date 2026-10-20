@@ -53,6 +53,7 @@ interface UiState {
   route: Route;
   paletteOpen: boolean;
   generateOpen: boolean;
+  inlineActionOpen: boolean;
   backlinksOpen: boolean;
   vaultPickerOpen: boolean;
   theme: Theme;
@@ -69,6 +70,9 @@ interface UiState {
 
   openGenerate: () => void;
   closeGenerate: () => void;
+
+  openInlineAction: () => void;
+  closeInlineAction: () => void;
 
   setBacklinksOpen: (open: boolean) => void;
   toggleBacklinks: () => void;
@@ -93,6 +97,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   route: "notes",
   paletteOpen: false,
   generateOpen: false,
+  inlineActionOpen: false,
   backlinksOpen: false,
   vaultPickerOpen: false,
   theme: readTheme(),
@@ -119,6 +124,10 @@ export const useUiStore = create<UiState>((set, get) => ({
 
   openGenerate: () => set({ generateOpen: true, paletteOpen: false }),
   closeGenerate: () => set({ generateOpen: false }),
+
+  openInlineAction: () =>
+    set({ inlineActionOpen: true, paletteOpen: false }),
+  closeInlineAction: () => set({ inlineActionOpen: false }),
 
   setBacklinksOpen: (open) => set({ backlinksOpen: open }),
   toggleBacklinks: () => set((state) => ({ backlinksOpen: !state.backlinksOpen })),

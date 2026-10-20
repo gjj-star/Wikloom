@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     process::Stdio,
     sync::{Mutex, OnceLock},
@@ -159,6 +159,9 @@ const PS_UTF8_PRELUDE: &str =
 #[derive(Default)]
 pub struct AiState {
     cancel: Mutex<HashMap<String, oneshot::Sender<()>>>,
+    /// `ai_cancel` 可能比 `ai_run` 注册 sender 更早到达，先记下请求，
+    /// 等 `ai_run` 启动时立刻取消，避免切笔记时漏杀整个进程树。
+    pending_cancels: Mutex<HashSet<String>>,
 }
 
 #[derive(Serialize)]
@@ -372,6 +375,22 @@ pub async fn ai_run(
     timeout_ms: Option<u64>,
     capture_output_file: Option<bool>,
 ) -> Result<AiRunResult, String> {
+    // 取消可能先于本次 ai_run 到达；直接返回取消，不启动进程。
+    let canceled_before_start = state
+        .pending_cancels
+        .lock()
+        .map(|mut pending| pending.remove(&request_id))
+        .unwrap_or(false);
+    if canceled_before_start {
+        return Ok(AiRunResult {
+            stdout: String::new(),
+            stderr: String::new(),
+            exit_code: None,
+            timed_out: false,
+            canceled: true,
+        });
+    }
+
     let command_path = resolve_command(&command)?;
 
     let needs_output_file =
@@ -437,12 +456,25 @@ pub async fn ai_run(
             .map_err(|_| "AI 取消状态锁失败。".to_string())?;
         pending.insert(request_id.clone(), cancel_tx);
     }
+    // 覆盖「取消在 spawn 之后、注册 sender 之前到达」的窗口。
+    let canceled_before_register = state
+        .pending_cancels
+        .lock()
+        .map(|mut pending| pending.remove(&request_id))
+        .unwrap_or(false);
 
     let deadline = Instant::now() + duration_ms(timeout_ms, 180_000);
     let mut timed_out = false;
     let mut canceled = false;
     let mut wait_error: Option<String> = None;
     let exit_code = loop {
+        if canceled_before_register {
+            canceled = true;
+            kill_tree(&mut child, job.as_ref());
+            let _ = child.wait().await;
+            break None;
+        }
+
         match child.try_wait() {
             Ok(Some(status)) => break status.code(),
             Ok(None) => {}
@@ -513,6 +545,12 @@ pub fn ai_cancel(state: State<'_, AiState>, request_id: String) {
         .and_then(|mut map| map.remove(&request_id));
     if let Some(sender) = sender {
         let _ = sender.send(());
+        return;
+    }
+
+    // ai_run 可能还没注册 sender；先记下，等它注册后立刻取消。
+    if let Ok(mut pending) = state.pending_cancels.lock() {
+        pending.insert(request_id);
     }
 }
 

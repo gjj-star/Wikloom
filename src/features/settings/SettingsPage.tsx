@@ -17,6 +17,7 @@ import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
 import { Panel } from "../../ui/Panel";
 import { AiSettingsPanel } from "./AiSettingsPanel";
+import { CustomModesPanel } from "./CustomModesPanel";
 
 const themeOptions: Array<{ value: Theme; label: string; hint: string }> = [
   { value: "light", label: "浅色", hint: "暖纸底 · 钴蓝强调" },
@@ -252,11 +253,12 @@ export function SettingsPage() {
           </Panel>
 
           <AiSettingsPanel />
+          <CustomModesPanel />
 
           <Panel title="关于">
             <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-2.5 text-[11.5px]">
               <dt className="text-faint">版本</dt>
-              <dd className="text-ink">v0.2.1 · M2 真实文件系统 + M3 AI 设置</dd>
+              <dd className="text-ink">v0.3.0 · M3 AI 生成与内联动作</dd>
               <dt className="text-faint">技术栈</dt>
               <dd className="text-ink">
                 React 19 · Tauri 2 · Tailwind CSS 4 · CodeMirror 6

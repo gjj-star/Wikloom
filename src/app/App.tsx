@@ -19,6 +19,7 @@ export function App() {
   const theme = useUiStore((state) => state.theme);
   const paletteOpen = useUiStore((state) => state.paletteOpen);
   const generateOpen = useUiStore((state) => state.generateOpen);
+  const inlineActionOpen = useUiStore((state) => state.inlineActionOpen);
   const backlinksOpen = useUiStore((state) => state.backlinksOpen);
   const route = useUiStore((state) => state.route);
   const mode = useUiStore((state) => state.mode);
@@ -121,7 +122,7 @@ export function App() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       // 生成对话框打开时，快捷键交给对话框自己处理，避免同时触发新建/切模式。
-      if (generateOpen) return;
+      if (generateOpen || inlineActionOpen) return;
 
       const mod = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
@@ -155,7 +156,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [paletteOpen, generateOpen, backlinksOpen]);
+  }, [paletteOpen, generateOpen, inlineActionOpen, backlinksOpen]);
 
   let content;
   if (status === "idle" || (status === "loading" && noteCount === 0)) {

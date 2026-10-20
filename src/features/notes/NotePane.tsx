@@ -9,6 +9,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { getBacklinks } from "../../core/links/backlinks";
 import type { EditorMode } from "../../app/uiStore";
@@ -28,6 +29,7 @@ import { Kbd } from "../../ui/Kbd";
 import { Segmented } from "../../ui/Segmented";
 import { Skeleton } from "../../ui/Skeleton";
 import { CodeEditor } from "../editor/CodeEditor";
+import { getEditorSelection } from "../editor/editorBridge";
 import { MarkdownView } from "../editor/MarkdownView";
 import { TagProperties } from "./TagProperties";
 import { useNotesStore } from "./store";
@@ -109,6 +111,17 @@ export function NotePane() {
   const loading = status === "loading" || status === "idle";
   const proseStyle = { "--prose-size": `${proseSize}px` } as CSSProperties;
 
+  function openInlineActions() {
+    const selection = getEditorSelection();
+    if (!selection?.text.trim()) {
+      useUiStore
+        .getState()
+        .showToast("先在正文里选中一段文字，再执行内联动作。");
+      return;
+    }
+    useUiStore.getState().openInlineAction();
+  }
+
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-canvas">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
@@ -164,14 +177,26 @@ export function NotePane() {
           />
 
           {mode === "edit" && note ? (
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<Check size={12} />}
-              onClick={() => void saveActiveNote()}
-            >
-              保存
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="border border-line"
+                icon={<Sparkles size={12} />}
+                title="内联 AI 动作（先选中文字）"
+                onClick={openInlineActions}
+              >
+                AI 动作
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Check size={12} />}
+                onClick={() => void saveActiveNote()}
+              >
+                保存
+              </Button>
+            </>
           ) : null}
         </div>
       </header>
