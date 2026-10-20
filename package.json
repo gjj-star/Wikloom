@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test:ai": "vitest run src/core/ai/prompt.test.ts",
+    "test": "vitest run",
+    "test:ai": "vitest run src/core/ai",
     "preview": "vite preview",
     "tauri": "tauri"
   },

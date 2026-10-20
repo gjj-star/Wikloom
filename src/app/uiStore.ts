@@ -52,6 +52,7 @@ function persist(key: string, value: string): void {
 interface UiState {
   route: Route;
   paletteOpen: boolean;
+  generateOpen: boolean;
   backlinksOpen: boolean;
   vaultPickerOpen: boolean;
   theme: Theme;
@@ -65,6 +66,9 @@ interface UiState {
   openPalette: () => void;
   closePalette: () => void;
   togglePalette: () => void;
+
+  openGenerate: () => void;
+  closeGenerate: () => void;
 
   setBacklinksOpen: (open: boolean) => void;
   toggleBacklinks: () => void;
@@ -88,6 +92,7 @@ interface UiState {
 export const useUiStore = create<UiState>((set, get) => ({
   route: "notes",
   paletteOpen: false,
+  generateOpen: false,
   backlinksOpen: false,
   vaultPickerOpen: false,
   theme: readTheme(),
@@ -111,6 +116,9 @@ export const useUiStore = create<UiState>((set, get) => ({
   openPalette: () => set({ paletteOpen: true }),
   closePalette: () => set({ paletteOpen: false }),
   togglePalette: () => set((state) => ({ paletteOpen: !state.paletteOpen })),
+
+  openGenerate: () => set({ generateOpen: true, paletteOpen: false }),
+  closeGenerate: () => set({ generateOpen: false }),
 
   setBacklinksOpen: (open) => set({ backlinksOpen: open }),
   toggleBacklinks: () => set((state) => ({ backlinksOpen: !state.backlinksOpen })),

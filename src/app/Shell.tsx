@@ -1,5 +1,6 @@
 import { BacklinkDrawer } from "../features/links/BacklinkDrawer";
 import { ClipperPage } from "../features/clipper/ClipperPage";
+import { GenerateNoteDialog } from "../features/ai/GenerateNoteDialog";
 import { NoteList } from "../features/notes/NoteList";
 import { NotePane } from "../features/notes/NotePane";
 import { TagsPage } from "../features/notes/TagsPage";
@@ -30,6 +31,7 @@ export function Shell() {
         )}
       </main>
       <CommandPalette />
+      <GenerateNoteDialog />
     </div>
   );
 }

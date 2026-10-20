@@ -8,7 +8,9 @@ import {
 
 function isMissingError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /no such file|not found|os error 2|ENOENT|不存在/i.test(message);
+  return /no such file|not found|os error 2|os error 3|ENOENT|不存在|找不到指定的路径/i.test(
+    message,
+  );
 }
 
 /**

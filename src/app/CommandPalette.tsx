@@ -17,6 +17,7 @@ import {
   SearchX,
   Settings,
   Scissors,
+  Sparkles,
   Sun,
   Tags as TagsIcon,
 } from "lucide-react";
@@ -84,6 +85,15 @@ export function CommandPalette() {
         icon: <Plus size={14} />,
         run: () => {
           void createNote();
+        },
+      },
+      {
+        key: "generate-note",
+        label: "生成笔记",
+        hint: "AI",
+        icon: <Sparkles size={14} />,
+        run: () => {
+          useUiStore.getState().openGenerate();
         },
       },
       {

@@ -18,6 +18,7 @@ import { Toaster } from "../ui/Toaster";
 export function App() {
   const theme = useUiStore((state) => state.theme);
   const paletteOpen = useUiStore((state) => state.paletteOpen);
+  const generateOpen = useUiStore((state) => state.generateOpen);
   const backlinksOpen = useUiStore((state) => state.backlinksOpen);
   const route = useUiStore((state) => state.route);
   const mode = useUiStore((state) => state.mode);
@@ -119,6 +120,9 @@ export function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // 生成对话框打开时，快捷键交给对话框自己处理，避免同时触发新建/切模式。
+      if (generateOpen) return;
+
       const mod = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
       const notesStore = useNotesStore.getState();
@@ -151,7 +155,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [paletteOpen, backlinksOpen]);
+  }, [paletteOpen, generateOpen, backlinksOpen]);
 
   let content;
   if (status === "idle" || (status === "loading" && noteCount === 0)) {

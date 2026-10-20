@@ -13,7 +13,8 @@ import { normalizeTags } from "../../core/vault/frontmatter";
 import { VaultError, toVaultError } from "../../core/vault/errors";
 import { scanVault, type VaultFileError } from "../../core/vault/scan";
 import type { VaultInfo } from "../../core/vault/types";
-import { createEmptyNote, writeNoteFile } from "../../core/vault/write";
+import { createEmptyNote, createNoteWithContent, writeNoteFile } from "../../core/vault/write";
+import type { NewNoteContent } from "../../core/vault/write";
 
 export type NotesStatus =
   | "idle"
@@ -84,6 +85,7 @@ interface NotesState {
   setTagFilter: (tag: string | null) => void;
 
   createNote: () => Promise<string | null>;
+  createGeneratedNote: (input: NewNoteContent) => Promise<Note>;
   updateContent: (id: string, content: string) => void;
   updateTags: (id: string, tags: string[]) => void;
   saveNote: (id?: string) => Promise<void>;
@@ -272,6 +274,35 @@ export const useNotesStore = create<NotesState>((set, get) => {
         set({ saveState: "error", saveError: failure.message });
         return null;
       }
+    },
+
+    async createGeneratedNote(input) {
+      const vault = get().vault;
+      const fs = activeFs;
+      if (!vault || !fs) {
+        throw new VaultError(
+          "WRITE_FAILED",
+          "知识库还没有准备好，暂时不能写入生成结果。",
+        );
+      }
+
+      await get().flush();
+      const note = await createNoteWithContent(
+        fs,
+        vault.root,
+        get().notes,
+        input,
+      );
+      set((state) => ({
+        notes: [note, ...state.notes],
+        selectedId: note.id,
+        query: "",
+        tagFilter: null,
+        saveState: "saved",
+        lastSavedAt: note.updatedAt,
+        saveError: null,
+      }));
+      return note;
     },
 
     updateContent(id, content) {
