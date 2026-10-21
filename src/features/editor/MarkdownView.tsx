@@ -16,6 +16,7 @@ import rehypeKatex from "rehype-katex";
 import { Check, Copy, ExternalLink, FileText } from "lucide-react";
 import { copyText, openNoteByTitle } from "../../app/actions";
 import { useNotesStore } from "../notes/store";
+import { useLinkPreview } from "../links/linkPreviewContext";
 import { preprocessWikiLinks } from "../../core/links/wikiLinks";
 import { rehypeStyleToObject } from "../../core/markdown/rehypeStyleToObject";
 import { cn } from "../../ui/cn";
@@ -104,6 +105,7 @@ interface MarkdownViewProps {
 
 export function MarkdownView({ content, className }: MarkdownViewProps) {
   const notes = useNotesStore((state) => state.notes);
+  const linkPreview = useLinkPreview();
   const titles = useMemo(
     () => new Set(notes.map((note) => note.title)),
     [notes],
@@ -126,8 +128,15 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
                   : `未找到「${target}」，可能还没建这条笔记`
               }
               onClick={() => {
+                linkPreview?.closePreview();
                 if (exists) openNoteByTitle(target);
               }}
+              onMouseEnter={
+                linkPreview
+                  ? (event) => linkPreview.showPreview(target, event.currentTarget)
+                  : undefined
+              }
+              onMouseLeave={linkPreview?.hidePreview}
               onContextMenu={(event) => {
                 openContextMenu(event, [
                   {
@@ -200,7 +209,7 @@ export function MarkdownView({ content, className }: MarkdownViewProps) {
         );
       },
     }),
-    [titles],
+    [titles, linkPreview],
   );
 
   return (

@@ -1,6 +1,6 @@
 [package]
 name = "wikloom"
-version = "0.4.0"
+version = "0.4.1"
 description = "Wikloom — 本地优先的个人知识库"
 authors = ["Wikloom"]
 edition = "2021"

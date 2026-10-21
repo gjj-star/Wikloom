@@ -56,6 +56,8 @@ interface UiState {
   inlineActionOpen: boolean;
   clipOpen: boolean;
   linkNoteOpen: boolean;
+  /** 从断链预览进入时，预填的目标标题；普通选词建链为 null。 */
+  missingLinkTarget: string | null;
   backlinksOpen: boolean;
   vaultPickerOpen: boolean;
   theme: Theme;
@@ -80,6 +82,7 @@ interface UiState {
   closeClip: () => void;
 
   openLinkNote: () => void;
+  openMissingLinkNote: (title: string) => void;
   closeLinkNote: () => void;
 
   setBacklinksOpen: (open: boolean) => void;
@@ -108,6 +111,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   inlineActionOpen: false,
   clipOpen: false,
   linkNoteOpen: false,
+  missingLinkTarget: null,
   backlinksOpen: false,
   vaultPickerOpen: false,
   theme: readTheme(),
@@ -142,8 +146,16 @@ export const useUiStore = create<UiState>((set, get) => ({
   openClip: () => set({ clipOpen: true, paletteOpen: false }),
   closeClip: () => set({ clipOpen: false }),
 
-  openLinkNote: () => set({ linkNoteOpen: true, paletteOpen: false }),
-  closeLinkNote: () => set({ linkNoteOpen: false }),
+  openLinkNote: () =>
+    set({ linkNoteOpen: true, missingLinkTarget: null, paletteOpen: false }),
+  openMissingLinkNote: (title) =>
+    set({
+      linkNoteOpen: true,
+      missingLinkTarget: title.trim(),
+      paletteOpen: false,
+    }),
+  closeLinkNote: () =>
+    set({ linkNoteOpen: false, missingLinkTarget: null }),
 
   setBacklinksOpen: (open) => set({ backlinksOpen: open }),
   toggleBacklinks: () => set((state) => ({ backlinksOpen: !state.backlinksOpen })),

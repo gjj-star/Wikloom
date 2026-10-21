@@ -93,6 +93,7 @@ function retitleFirstHeading(content: string, title: string): string {
 
 export function CreateLinkNoteDialog() {
   const open = useUiStore((state) => state.linkNoteOpen);
+  const missingTarget = useUiStore((state) => state.missingLinkTarget);
   const settings = useAiSettingsStore((state) => state.settings);
   const notes = useNotesStore((state) => state.notes);
   const selectedId = useNotesStore((state) => state.selectedId);
@@ -148,6 +149,18 @@ export function CreateLinkNoteDialog() {
     setCanceling(false);
     setModeId(resolveMode(settings.defaultModeId, settings.customModes).id);
 
+    // 断链预览进入：链接已经在原文里，只需要创建目标笔记，不回写选区。
+    if (missingTarget) {
+      if (!currentNote) {
+        setStage("no-selection");
+        return;
+      }
+      setSelection(null);
+      setBaseTitle(missingTarget);
+      setStage("form");
+      return;
+    }
+
     if (!currentNote || !snapshot || !snapshot.text.trim()) {
       setStage("no-selection");
       return;
@@ -186,7 +199,7 @@ export function CreateLinkNoteDialog() {
     setStage("form");
     // 只在打开时抓一次设置；对话框打开期间不跟随设置变更重置。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, missingTarget]);
 
   // 笔记切换后旧选区/旧请求都不再有效；先取消请求，再锁死本轮结果。
   useEffect(() => {
@@ -293,7 +306,7 @@ export function CreateLinkNoteDialog() {
       setStage("error");
       return;
     }
-    if (!selection || !baseTitle) {
+    if ((!selection && !missingTarget) || !baseTitle) {
       setStage("no-selection");
       return;
     }
@@ -355,6 +368,47 @@ export function CreateLinkNoteDialog() {
 
   async function handleWrite(): Promise<void> {
     if (!draft || writingRef.current) return;
+
+    // 断链目标：链接已经在来源笔记里，只创建目标笔记，不替换选区。
+    if (missingTarget) {
+      if (!sourceNoteId) {
+        setWriteError("来源笔记已经关闭，没有创建文件。");
+        setStage("preview");
+        return;
+      }
+      writingRef.current = true;
+      setStage("saving");
+      setWriteError(null);
+      try {
+        const note = await useNotesStore.getState().createNoteFromContent(
+          {
+            title: draft.title,
+            content: draft.content,
+            tags: draft.tags,
+            extra: draft.extra,
+          },
+          { selectNew: false },
+        );
+        const ui = useUiStore.getState();
+        ui.closeLinkNote();
+        ui.showToast(`已创建「${note.title}」，链接已可打开。`, "success");
+        resetRun();
+        setStage("form");
+        setDraft(null);
+      } catch (error) {
+        const failure = toVaultError(
+          error,
+          "WRITE_FAILED",
+          "创建链接目标失败。",
+        );
+        setWriteError(failure.message);
+        setStage("preview");
+      } finally {
+        writingRef.current = false;
+      }
+      return;
+    }
+
     if (!selection || !sourceNoteId) {
       setWriteError("原选区已经失效，还没有创建文件。请返回后重新选中。");
       setStage("preview");
@@ -657,7 +711,9 @@ export function CreateLinkNoteDialog() {
                 {baseTitle}
               </div>
               <div className="mt-0.5 text-[10px] text-faint">
-                创建后会替换选区为 [[{baseTitle}]]，可以 Ctrl+Z 撤销。
+                {missingTarget
+                  ? "确认后会创建目标笔记；原文里的链接保持不动。"
+                  : `创建后会替换选区为 [[${baseTitle}]]，可以 Ctrl+Z 撤销。`}
               </div>
             </div>
 
@@ -811,9 +867,19 @@ export function CreateLinkNoteDialog() {
             </div>
 
             <div className="rounded-lg border border-line bg-surface px-3 py-2 text-[10.5px] leading-relaxed text-muted">
-              确认后原选区会变成{" "}
-              <span className="font-mono text-ink">[[{draft.title}]]</span>
-              ；链接替换可以 Ctrl+Z 撤销，已创建的笔记文件不会自动删除。
+              {missingTarget ? (
+                <>
+                  确认后会创建目标笔记「{draft.title}」；原文里的{" "}
+                  <span className="font-mono text-ink">[[{draft.title}]]</span>{" "}
+                  链接保持不动。
+                </>
+              ) : (
+                <>
+                  确认后原选区会变成{" "}
+                  <span className="font-mono text-ink">[[{draft.title}]]</span>
+                  ；链接替换可以 Ctrl+Z 撤销，已创建的笔记文件不会自动删除。
+                </>
+              )}
             </div>
 
             {writeError ? (
@@ -828,7 +894,7 @@ export function CreateLinkNoteDialog() {
                 icon={<Check size={13} />}
                 onClick={() => void handleWrite()}
               >
-                创建并插入双链
+                {missingTarget ? "创建这篇笔记" : "创建并插入双链"}
               </Button>
               <Button
                 variant="ghost"

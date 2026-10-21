@@ -16,6 +16,8 @@ import { openContextMenu } from "../../ui/ContextMenu";
 import { EmptyState } from "../../ui/EmptyState";
 import { IconButton } from "../../ui/IconButton";
 import { useNotesStore } from "../notes/store";
+import { LinkPreviewProvider } from "./LinkPreview";
+import { useLinkPreview } from "./linkPreviewContext";
 
 type BacklinkTab = "references" | "mentions";
 
@@ -32,6 +34,8 @@ function highlightSnippet(snippet: string, term: string): ReactNode {
 }
 
 function BacklinkRow({ item, term }: { item: Backlink; term: string }) {
+  const linkPreview = useLinkPreview();
+
   function handleContextMenu(event: ReactMouseEvent<HTMLButtonElement>) {
     openContextMenu(event, [
       {
@@ -50,8 +54,17 @@ function BacklinkRow({ item, term }: { item: Backlink; term: string }) {
   return (
     <button
       type="button"
-      onClick={() => openNote(item.note.id, { mode: "read" })}
+      onClick={() => {
+        linkPreview?.closePreview();
+        openNote(item.note.id, { mode: "read" });
+      }}
       onContextMenu={handleContextMenu}
+      onMouseEnter={
+        linkPreview
+          ? (event) => linkPreview.showPreview(item.note.title, event.currentTarget)
+          : undefined
+      }
+      onMouseLeave={linkPreview?.hidePreview}
       className="group w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-hover"
     >
       <div className="flex items-center gap-1.5">
@@ -94,14 +107,15 @@ export function BacklinkDrawer() {
   ];
 
   return (
-    <aside
-      aria-label="反向链接"
-      inert={!open}
-      className={cn(
-        "shrink-0 overflow-hidden bg-surface transition-[width] duration-200 ease-out",
-        open ? "w-[340px] border-l border-line" : "w-0",
-      )}
-    >
+    <LinkPreviewProvider key={`${note?.id ?? ""}:${open ? "open" : "closed"}`}>
+      <aside
+        aria-label="反向链接"
+        inert={!open}
+        className={cn(
+          "shrink-0 overflow-hidden bg-surface transition-[width] duration-200 ease-out",
+          open ? "w-[340px] border-l border-line" : "w-0",
+        )}
+      >
       <div className="flex h-full w-[340px] flex-col">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-4">
           <Link2 size={15} className="text-muted" />
@@ -172,6 +186,7 @@ export function BacklinkDrawer() {
           引用 = 显式写了 wiki 链接；提及 = 正文提到了标题。
         </footer>
       </div>
-    </aside>
+      </aside>
+    </LinkPreviewProvider>
   );
 }

@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useMemo,
   useRef,
@@ -26,6 +26,7 @@ import { useUiStore } from "../../app/uiStore";
 import { modKey } from "../../core/platform";
 import { countCharacters } from "../../core/text/plainText";
 import { formatClock, formatDateTime } from "../../core/time/relativeTime";
+import { toVaultError } from "../../core/vault/errors";
 import {
   createNote,
   openAllNotes,
@@ -44,6 +45,7 @@ import {
   selectTextInActiveEditor,
 } from "../editor/editorBridge";
 import { MarkdownView } from "../editor/MarkdownView";
+import { LinkPreviewProvider } from "../links/LinkPreview";
 import { TagProperties } from "./TagProperties";
 import { useNotesStore } from "./store";
 
@@ -171,6 +173,46 @@ export function NotePane() {
       return;
     }
     useUiStore.getState().openLinkNote();
+  }
+
+  /** 断链卡片的默认入口：不调用 AI，只按链接文字建一篇空笔记。 */
+  async function createBlankLinkedNote(title: string): Promise<boolean> {
+    if (!note) return false;
+    const state = useNotesStore.getState();
+    const existing = state.notes.find((item) => item.title === title);
+    if (existing) {
+      useUiStore
+        .getState()
+        .showToast(`「${existing.title}」已经存在，链接已可打开。`, "success");
+      return true;
+    }
+
+    try {
+      const created = await state.createNoteFromContent(
+        {
+          title,
+          content: "",
+          tags: [],
+          extra: { source_note: note.id },
+        },
+        { selectNew: false },
+      );
+      useUiStore
+        .getState()
+        .showToast(
+          `已创建空白笔记「${created.title}」，链接已可打开。`,
+          "success",
+        );
+      return true;
+    } catch (error) {
+      const failure = toVaultError(
+        error,
+        "WRITE_FAILED",
+        "创建空白笔记失败。",
+      );
+      useUiStore.getState().showToast(failure.message, "error");
+      return false;
+    }
   }
 
   async function copyReadingSelection(text: string): Promise<void> {
@@ -415,12 +457,19 @@ export function NotePane() {
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <article
-            ref={articleRef}
-            onContextMenu={handleReadingContextMenu}
-            className="mx-auto w-full max-w-[780px] px-10 pb-32 pt-11"
-            style={proseStyle}
+          <LinkPreviewProvider
+            key={note.id}
+            onCreateBlank={createBlankLinkedNote}
+            onCreateMissing={(title) =>
+              useUiStore.getState().openMissingLinkNote(title)
+            }
           >
+            <article
+              ref={articleRef}
+              onContextMenu={handleReadingContextMenu}
+              className="mx-auto w-full max-w-[780px] px-10 pb-32 pt-11"
+              style={proseStyle}
+            >
             <h1 className="text-[30px] font-semibold leading-[1.25] tracking-[-0.02em] text-ink">
               {note.title}
             </h1>
@@ -464,6 +513,7 @@ export function NotePane() {
               )}
             </div>
           </article>
+          </LinkPreviewProvider>
         </div>
       )}
     </div>
