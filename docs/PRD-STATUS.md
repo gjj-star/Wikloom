@@ -1,17 +1,17 @@
-﻿# PRD 对照状态清单：PRD v1.1 → Wikloom v0.4.0
+﻿# PRD 对照状态清单：PRD v1.1 → Wikloom v0.4.1
 
-更新：v0.4.0（23ac30f）
+更新：v0.4.1（3065a59）
 
 | 项 | 值 |
 | --- | --- |
 | 对照 PRD | 《个人知识 Wiki 产品需求文档》v1.1，2026-10-14，589 行 / 54,969 字节（仓库外本地 PRD 文件，不入库） |
-| 代码版本 | v0.4.0（`package.json:4`、`src/features/settings/SettingsPage.tsx:261`；git tag `v0.4.0`，HEAD `23ac30f`） |
-| 审计快照 | commit `23ac30f`（tag `v0.4.0`）。本清单在 v0.4.0 发布后重审受影响行，旧版工作区观察项已并入 |
-| 生成日期 | 2026-10-20 |
+| 代码版本 | v0.4.1（`package.json:4`、`src/features/settings/SettingsPage.tsx:261`；git tag `v0.4.1`，HEAD `3065a59`） |
+| 审计快照 | commit `3065a59`（tag `v0.4.1`）。本清单在 v0.4.1 发布后补 D02 与断链创建的核对行，其余判定沿用 v0.4.0（`23ac30f`）审计 |
+| 生成日期 | 2026-10-20（v0.4.0 基线）；2026-10-26 按 v0.4.1 增量更新 |
 | 判定方法 | 「已实现」= 当前代码中存在可指认的实现路径（文件:行），且至少一条可执行或可查看的验证（vitest 用例 / `screenshots/` 截图 / 真机日志）；只有界面占位、只有数据结构、或依赖未实现前置的，一律不计为已实现。 |
-| 证据口径 | 路径相对仓库根；本次更新行按 commit `23ac30f` 核对，未改动行沿用旧行号。v0.4.0 已复跑 `pnpm test`（38 通过）、`pnpm build`、`cargo test clipper::tests`（5 通过）。 |
+| 证据口径 | 路径相对仓库根；本次更新行按 commit `3065a59` 核对，未改动行沿用 v0.4.0（`23ac30f`）行号。v0.4.1 已复跑 `pnpm test`（39 通过）、`pnpm exec tsc --noEmit`、`pnpm build`。 |
 
-状态取值：`已实现` / `部分实现` / `未实现` / `已废止`（被 v0.4.0 方向取代）/ `未核`（证据不足，不猜）。
+状态取值：`已实现` / `部分实现` / `未实现` / `已废止`（被 v0.4.0 方向取代）/ `未核`（证据不足，不猜）；决策项另用 `已收敛`（已由实现确定，不再待决）。
 
 ## 状态总表
 
@@ -39,7 +39,7 @@
 | --- | --- | --- | --- | --- |
 | AC01 | 选词手动保存并原位建链 | 已实现 | `src/features/ai/CreateLinkNoteDialog.tsx:356` 确认后 `createNoteFromContent` 落盘并回写；`src/features/editor/editorBridge.ts:59` 事务替换选区；`screenshots/m35/18-exact-recursion-preview.png`、`screenshots/m35/19-exact-recursion-backlink.png` | 通过 AI 生成确认后保存，不是空白笔记变体；重启保持复用 M2 的文件持久化 |
 | AC02 | AI 解释后编辑并保存 | 未实现 | `src/features/ai/InlineActionDialog.tsx:214` 只回写选区文本，不产生知识对象；`src/features/ai/GenerateNoteDialog.tsx:235` 是整篇生成，不基于选区解释 | 无「AI 会话→确认→保存对象→建链」链路 |
-| AC03 | 断网/不配 AI 仍可手动建链 | 部分实现 | 离线创建/阅读/搜索可用（`src/features/notes/store.ts:250`、`src/features/notes/NoteList.tsx:159`）；手写 `[[标题]]` 可渲染（`src/features/editor/MarkdownView.tsx:116`） | 选词建链依赖 AI；断网仍只能手写链接，无断网实测 |
+| AC03 | 断网/不配 AI 仍可手动建链 | 部分实现 | 离线创建/阅读/搜索可用（`src/features/notes/store.ts:250`、`src/features/notes/NoteList.tsx:159`）；手写 `[[标题]]` 可渲染（`src/features/editor/MarkdownView.tsx:116`）；v0.4.1 断链卡片「创建空白笔记」不依赖 AI（`src/features/links/LinkPreview.tsx:340-358`，真机验收：无 CLI 时只出现该按钮并成功落盘） | 「选词→建链」仍依赖 AI；断网仍只能手写 `[[标题]]`，无断网实测 |
 | AC04 | 同一对象切换便签/页面 | 未实现 | 同 FR04：`src/core/notes/types.ts` 无 view，无切换入口 | ID/正文/关系不变无法验证 |
 | AC05 | 三处同名只改选中一处 | 已实现 | `src/features/editor/editorBridge.ts:59-84` 只替换快照 `from/to` 选区；`src/features/editor/selectionMapping.test.ts:28`「selects the second of three identical occurrences and replaces only that one」（三处同名、选第二处、断言只改第二处并校验文档）；`src/core/links/linkNote.test.ts:37-49` 覆盖已链接/链接内选区；`screenshots/m35/14-link-before-undo.png`、`screenshots/m35/15-link-undo.png` | 三处同名专项用例已通过；替换后只产生一个 `[[递归]]`，另外两处保持原文 |
 | AC06 | 复用已有对象并新增引用 | 部分实现 | `src/features/ai/CreateLinkNoteDialog.tsx:257` 复用已有、`:584` 按钮、`:606` 新建序号；`src/core/links/linkNote.ts:62` 同源判断；`src/core/links/linkNote.test.ts:50-61`；`screenshots/m35/06-existing-reuse.png` | 只能按同名标题复用，没有任意对象搜索/选择器；`source_note` 只写入新建笔记，复用不更新旧笔记 |
@@ -48,7 +48,7 @@
 | AC09 | 保存中断/无权限/外部修改 | 部分实现 | 原子写 `src/core/vault/write.ts:32-63`；错误态 `src/features/notes/store.ts:379-389`；关窗 flush `src/app/App.tsx:80-92` | 无外部修改检测与冲突合并（`README.md:55`、`README.md:87`）；无故障注入测试 |
 | AC10 | 完整备份恢复并重建索引 | 未实现 | 同 FR10；`src-tauri/src/lib.rs:168-178` 无备份/导出命令 | 仅能手动拷文件夹；无恢复流程与校验 |
 | AC11 | 危险 HTML 与代码块安全 | 部分实现 | `src/features/editor/MarkdownView.tsx:208-214` 未启用 rehype-raw，原始 HTML 不作为 HTML 渲染；`src/core/links/wikiLinks.ts:20-31` 跳过围栏代码与行内代码 | 无导入，也无危险 HTML/代码块回归用例，仅代码推断 |
-| AC12 | 删除目标或解除链接 | 部分实现 | 缺链显示 `is-missing`（`src/features/editor/MarkdownView.tsx:121-127`）、反链摘要保留 | 无删除目标、无解除链接操作，无受影响引用提示 |
+| AC12 | 删除目标或解除链接 | 部分实现 | 缺链显示 `is-missing`（`src/features/editor/MarkdownView.tsx:121-127`）、反链摘要保留；v0.4.1 断链卡片可直接创建目标笔记（`src/features/links/LinkPreview.tsx:340-358`） | 断链可一键补建恢复，但仍无删除目标、无解除链接操作，无受影响引用提示 |
 | AC13 | 首次使用完整学习流程 | 部分实现 | 首启选库（`src/features/notes/Onboarding.tsx:105-126`）；选词建链主路径 `src/features/ai/CreateLinkNoteDialog.tsx:283`、`:356`；`screenshots/m35/18-exact-recursion-preview.png`、`screenshots/m35/19-exact-recursion-backlink.png` | 「选库→阅读→选词→生成→保存→反链」已可走通；仍缺「仅保存/改目标/取消链接」控制，C11/AC14 未闭环 |
 | AC14 | 选词后「仅保存」不改原文 | 未实现 | `src/features/ai/CreateLinkNoteDialog.tsx:356` 确认后固定插入 `[[标题]]`；无仅保存入口 | 状态未变：当前只有「保存并建链」，没有「仅保存」分支，也没有「链接未完成」语义 |
 
@@ -71,6 +71,14 @@
 | §8.5 | 首次使用成本 | 部分实现 | 首启 1 步选库（`src/features/notes/Onboarding.tsx:105-126`），0 必填配置；默认标题「未命名笔记」（`src/core/vault/write.ts:79-105`）；选词建链主路径见 `src/features/ai/CreateLinkNoteDialog.tsx:283` | 路径已可走通，但「阅读到建链 ≤5 步」未实测；默认知识库位置未提供建议 |
 | §9.1 | AI Provider 适配层 | 部分实现 | `src/core/ai/providers.ts:34-119` 统一 provider 定义与参数模板；`src-tauri/src/ai.rs` 执行与取消 | 仅 CLI/Ollama，无 API 服务商；无用量/错误持久记录；无普通/高级双入口抽象 |
 | §9.3 | 阅读选区与 Markdown 源码映射 | 已废止 | 改为源码态取选区（`src/features/editor/editorBridge.ts:18-29`）；v0.4.0 阅读态建链通过文本 + 出现序号切回编辑态选词（`src/features/notes/NotePane.tsx:223`、`src/features/editor/editorBridge.ts:145`） | 仍是近似文本定位，不是完整 Markdown 位置映射；重复文本有歧义。是否接受该方案需产品确认，行状态保留本清单判断 |
+
+## D02 决策项核对（v0.4.1）
+
+D02 是 PRD 第 11 章的待确认决策，不计入上方需求统计；本表只记它的收敛情况。
+
+| 决策项 | 决策摘要 | 状态 | 证据 | 备注 |
+| --- | --- | --- | --- | --- |
+| D02 | 点击内部链接的默认打开方式（是否先预览再打开） | 已收敛 | 阅读态悬停 350ms 出预览卡片（`src/features/links/LinkPreview.tsx:38`、`src/features/editor/MarkdownView.tsx:135-139`）；反链抽屉行同样支持（`src/features/links/BacklinkDrawer.tsx:62-67`）；卡片含标题、标签、更新时间、去 Markdown 后的 200 字摘要与「打开」（`LinkPreview.tsx:291-292`、`:429`、`:443`；摘要实现 `src/core/text/plainText.ts:20`）；断链卡片显示「尚未创建」，默认「创建空白笔记」，仅检测到 AI 可用时才并列「用 AI 生成」（`LinkPreview.tsx:157-174`、`:340-373`）；焦点移出卡片自动关闭（`LinkPreview.tsx:305-309`）；v0.4.1 真机验收通过 | 收敛为「悬停预览、点击直接打开」：预览是辅助，不改变点击的默认行为；编辑态 CodeMirror 内的链接未加预览（已知边界）；「锚点被卡片覆盖时闪烁」未修，已登记 |
 
 ## 汇总统计
 
@@ -117,4 +125,4 @@
 **判定口径需外审确认**
 
 8. §9.3 标「已废止」是本清单的判断：v0.4.0 阅读态已经可以发起建链，但用的是「文本 + 出现序号」找回源码选区，不是 PRD 要求的完整 Markdown 位置映射；重复文本仍有歧义。是否接受这个近似方案、以及该项是否改判「部分实现」，需产品/外审确认。
-9. 本清单已按 tag `v0.4.0` / commit `23ac30f` 更新；旧版关于剪藏未提交的观察已并入 FR11。FR03 的富文本粘贴与导入仍未实现，网页 URL 采集不等同于完整导入。
+9. 本清单已按 tag `v0.4.1` / commit `3065a59` 更新；v0.4.1 把 D02 收敛为「悬停预览 + 点击直接打开」，旧版关于剪藏未提交的观察已并入 FR11。FR03 的富文本粘贴与导入仍未实现，网页 URL 采集不等同于完整导入。
