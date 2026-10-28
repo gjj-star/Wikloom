@@ -1,0 +1,17 @@
+
+ RUN  v3.2.7 <审计机>/wikloom/source
+
+ ✓ src/core/links/linkNote.test.ts (7 tests) 17ms
+ ✓ src/features/editor/selectionMapping.test.ts (1 test) 6ms
+ ✓ src/core/ai/customModes.test.ts (4 tests) 4ms
+ ✓ src/core/ai/prompt.test.ts (5 tests) 8ms
+ ✓ src/core/ai/modeCopy.test.ts (2 tests) 7ms
+ ✓ src/core/ai/generate.test.ts (13 tests) 17ms
+ ✓ src/core/vault/write.test.ts (6 tests) 23ms
+ ✓ src/features/notes/store.saveRace.test.ts (1 test) 157ms
+
+ Test Files  8 passed (8)
+      Tests  39 passed (39)
+   Start at  23:53:37
+   Duration  1.38s (transform 623ms, setup 0ms, collect 1.68s, tests 239ms, environment 2ms, prepare 2.08s)
+

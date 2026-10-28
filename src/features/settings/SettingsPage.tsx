@@ -40,6 +40,14 @@ export function SettingsPage() {
     setRescanning(true);
     try {
       await rescan();
+      if (useNotesStore.getState().saveState === "error") {
+        useUiStore
+          .getState()
+          .showToast(
+            "还有内容没能保存，已保留草稿，本次没有重新扫描。请先解决写入问题。",
+            "error",
+          );
+      }
     } finally {
       setRescanning(false);
     }
@@ -258,7 +266,7 @@ export function SettingsPage() {
           <Panel title="关于">
             <dl className="grid grid-cols-[88px_1fr] gap-x-4 gap-y-2.5 text-[11.5px]">
               <dt className="text-faint">版本</dt>
-              <dd className="text-ink">v0.4.1</dd>
+              <dd className="text-ink">v0.4.2</dd>
               <dt className="text-faint">技术栈</dt>
               <dd className="text-ink">
                 React 19 · Tauri 2 · Tailwind CSS 4 · CodeMirror 6

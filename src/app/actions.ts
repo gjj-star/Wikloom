@@ -87,10 +87,10 @@ export function selectTag(tag: string): void {
 
 export async function saveActiveNote(): Promise<void> {
   const notesStore = useNotesStore.getState();
-  await notesStore.saveNote(notesStore.selectedId);
+  const saved = await notesStore.saveNote(notesStore.selectedId);
   const state = useNotesStore.getState();
   const ui = useUiStore.getState();
-  if (state.saveState === "error") {
+  if (!saved || state.saveState === "error") {
     ui.showToast(state.saveError ?? "保存失败。", "error");
   } else {
     ui.showToast("已保存到磁盘", "success");
@@ -120,6 +120,13 @@ export async function chooseDemoVault(id: string): Promise<boolean> {
 
   await useNotesStore.getState().openVault(vault);
   const ui = useUiStore.getState();
+  if (useNotesStore.getState().saveState === "error") {
+    ui.showToast(
+      "还有内容没能保存，草稿已保留，本次没有切换知识库。",
+      "error",
+    );
+    return false;
+  }
   if (useNotesStore.getState().status === "ready") {
     ui.navigate("notes");
     ui.closeVaultPicker();
@@ -144,6 +151,13 @@ export async function chooseTauriVault(): Promise<boolean> {
     });
 
     const ui = useUiStore.getState();
+    if (useNotesStore.getState().saveState === "error") {
+      ui.showToast(
+        "还有内容没能保存，草稿已保留，本次没有切换知识库。",
+        "error",
+      );
+      return false;
+    }
     if (useNotesStore.getState().status === "ready") {
       ui.navigate("notes");
       ui.closeVaultPicker();

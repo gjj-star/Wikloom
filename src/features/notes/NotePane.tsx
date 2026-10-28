@@ -42,7 +42,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { CodeEditor } from "../editor/CodeEditor";
 import {
   getEditorSelection,
-  selectTextInActiveEditor,
+  locateTextInActiveEditor,
 } from "../editor/editorBridge";
 import { MarkdownView } from "../editor/MarkdownView";
 import { LinkPreviewProvider } from "../links/LinkPreview";
@@ -142,12 +142,14 @@ export function NotePane() {
     const frame = window.requestAnimationFrame(() => {
       if (pendingReadingLinkRef.current !== pending) return;
       pendingReadingLinkRef.current = null;
-      if (selectTextInActiveEditor(pending.text, pending.occurrence)) {
+      const located = locateTextInActiveEditor(
+        pending.text,
+        pending.occurrence,
+      );
+      if (located.ok) {
         useUiStore.getState().openLinkNote();
       } else {
-        useUiStore
-          .getState()
-          .showToast("原文里找不到刚才选中的文字，可能已被修改。", "error");
+        useUiStore.getState().showToast(located.reason, "error");
       }
     });
     return () => window.cancelAnimationFrame(frame);

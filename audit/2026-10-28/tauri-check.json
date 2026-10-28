@@ -1,0 +1,35 @@
+{
+  "steps": [
+    {
+      "name": "10-tauri-save-failed.png",
+      "file": "screenshots\\audit-2026-10-28\\10-tauri-save-failed.png"
+    },
+    {
+      "name": "11-tauri-rescan-blocked.png",
+      "file": "screenshots\\audit-2026-10-28\\11-tauri-rescan-blocked.png"
+    },
+    {
+      "name": "12-tauri-draft-kept.png",
+      "file": "screenshots\\audit-2026-10-28\\12-tauri-draft-kept.png"
+    },
+    {
+      "name": "13-tauri-close-confirm.png",
+      "file": "screenshots\\audit-2026-10-28\\13-tauri-close-confirm.png"
+    },
+    {
+      "name": "14-tauri-after-close-cancel.png",
+      "file": "screenshots\\audit-2026-10-28\\14-tauri-after-close-cancel.png"
+    }
+  ],
+  "dialogs": [],
+  "errors": [],
+  "results": {
+    "draftKept": true,
+    "rescanBlocked": true,
+    "saveFailed": true,
+    "closeConfirmShown": true,
+    "closeConfirmText": "还有内容没有保存到磁盘\n\n关闭窗口会丢掉这些修改。可以先点「留在这里」，修好写入问题后再保存和关闭。\n\n留在这里\n放弃修改并关闭",
+    "promptDismissed": true,
+    "windowStillOpen": true
+  }
+}

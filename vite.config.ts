@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -6,6 +7,10 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   clearScreen: false,
+  test: {
+    // audit/ 存的是审计当时的复现脚本，断言的是修复前的错误行为，不进入常规测试。
+    exclude: [...configDefaults.exclude, "audit/**"],
+  },
   server: {
     port: 5173,
     strictPort: true,

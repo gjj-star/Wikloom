@@ -1,0 +1,62 @@
+{
+  "base": "http://127.0.0.1:4173",
+  "chromium": "<本机 Chromium 可执行文件>",
+  "steps": [
+    {
+      "step": "01",
+      "name": "open-vault",
+      "file": "screenshots\\audit-2026-10-28\\01-open-vault.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "02",
+      "name": "new-note",
+      "file": "screenshots\\audit-2026-10-28\\02-new-note.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "03",
+      "name": "edit-note",
+      "file": "screenshots\\audit-2026-10-28\\03-edit-note.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "04",
+      "name": "explicit-save",
+      "file": "screenshots\\audit-2026-10-28\\04-explicit-save.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "05",
+      "name": "refresh-persists",
+      "file": "screenshots\\audit-2026-10-28\\05-refresh-persists.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "06",
+      "name": "search",
+      "file": "screenshots\\audit-2026-10-28\\06-search.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "07",
+      "name": "table-formula",
+      "file": "screenshots\\audit-2026-10-28\\07-table-formula.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "08",
+      "name": "link-navigation",
+      "file": "screenshots\\audit-2026-10-28\\08-link-navigation.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "09",
+      "name": "backlinks",
+      "file": "screenshots\\audit-2026-10-28\\09-backlinks.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    }
+  ],
+  "consoleErrors": [],
+  "failures": []
+}

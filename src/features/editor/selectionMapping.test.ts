@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { extractWikiLinks } from "../../core/links/wikiLinks";
 import {
   getEditorSelection,
+  locateTextInActiveEditor,
   replaceSelectionWithLink,
   selectTextInActiveEditor,
   setActiveEditor,
@@ -53,6 +54,86 @@ describe("selection mapping", () => {
       expect(links[0].start).toBe(second);
       expect(after.slice(first, first + 2)).toBe("递归");
       expect(after.slice(third + 4, third + 6)).toBe("递归");
+    } finally {
+      setActiveEditor(null);
+    }
+  });
+
+  it("ignores same-name text hidden in link URLs and frontmatter", () => {
+    // 回归（v0.4.2 审计 P1）：渲染后的第二处 recursion 对应源文中的第二处可见文本，
+    // 不能被藏在链接地址里的同名片段挤掉，否则会改到第一处。
+    const original = [
+      "[reference](https://example.org/recursion)",
+      "",
+      "recursion first",
+      "recursion second",
+      "recursion third",
+    ].join("\n");
+    const second = original.indexOf("recursion second");
+    const editor = fakeEditor(original);
+
+    setActiveEditor(editor.view);
+    try {
+      expect(selectTextInActiveEditor("recursion", 1)).toBe(true);
+      const selection = getEditorSelection();
+      expect(selection?.from).toBe(second);
+      expect(selection?.text).toBe("recursion");
+
+      expect(replaceSelectionWithLink(selection!, "recursion")).toEqual({ ok: true });
+      const after = editor.doc();
+      expect(after).toContain("[[recursion]] second");
+      expect(after).toContain("recursion first");
+    } finally {
+      setActiveEditor(null);
+    }
+  });
+
+  it("counts link syntax inside inline code as visible, but refuses linking in code", () => {
+    // 回归：`[x](recursion)` 在阅读态是可见的代码文本，不能当成隐藏的链接地址。
+    const original = "`[x](recursion)`\n\nrecursion first\nrecursion second";
+    const editor = fakeEditor(original);
+
+    setActiveEditor(editor.view);
+    try {
+      // 可见出现：代码里的 recursion(0)、first(1)、second(2)。
+      expect(selectTextInActiveEditor("recursion", 2)).toBe(true);
+      expect(getEditorSelection()?.from).toBe(
+        original.indexOf("recursion second"),
+      );
+
+      const refused = locateTextInActiveEditor("recursion", 0);
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.reason).toContain("代码");
+    } finally {
+      setActiveEditor(null);
+    }
+  });
+
+  it("counts fenced code text as visible, but refuses linking inside it", () => {
+    const original = "```\nrecursion in code\n```\n\nrecursion outside";
+    const editor = fakeEditor(original);
+
+    setActiveEditor(editor.view);
+    try {
+      const refused = locateTextInActiveEditor("recursion", 0);
+      expect(refused.ok).toBe(false);
+
+      expect(selectTextInActiveEditor("recursion", 1)).toBe(true);
+      expect(getEditorSelection()?.from).toBe(
+        original.indexOf("recursion outside"),
+      );
+    } finally {
+      setActiveEditor(null);
+    }
+  });
+
+  it("refuses a selection that spans lines instead of guessing", () => {
+    const editor = fakeEditor("alpha beta\ngamma delta");
+    setActiveEditor(editor.view);
+    try {
+      const refused = locateTextInActiveEditor("beta\ngamma", 0);
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.reason).toContain("多行");
     } finally {
       setActiveEditor(null);
     }

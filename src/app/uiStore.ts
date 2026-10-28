@@ -60,6 +60,8 @@ interface UiState {
   missingLinkTarget: string | null;
   backlinksOpen: boolean;
   vaultPickerOpen: boolean;
+  /** 关窗时还有内容没落盘：显示应用内确认框，而不是直接丢弃。 */
+  closePrompt: boolean;
   theme: Theme;
   mode: EditorMode;
   proseSize: ProseSize;
@@ -92,6 +94,8 @@ interface UiState {
   closeVaultPicker: () => void;
   toggleVaultPicker: () => void;
 
+  setClosePrompt: (open: boolean) => void;
+
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 
@@ -114,6 +118,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   missingLinkTarget: null,
   backlinksOpen: false,
   vaultPickerOpen: false,
+  closePrompt: false,
   theme: readTheme(),
   mode: readMode(),
   proseSize: readSize(),
@@ -164,6 +169,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   closeVaultPicker: () => set({ vaultPickerOpen: false }),
   toggleVaultPicker: () =>
     set((state) => ({ vaultPickerOpen: !state.vaultPickerOpen })),
+
+  setClosePrompt: (open) => set({ closePrompt: open }),
 
   setTheme(theme) {
     set({ theme });

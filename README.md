@@ -86,8 +86,11 @@ src-tauri/        Tauri 2 壳、fs/dialog 插件、capabilities
 
 ## 验收与测试
 
+- `pnpm test`（vitest：45 项，含保存失败草稿、选区映射、建链、AI 解析等回归）
 - `pnpm exec tsc --noEmit`
 - `pnpm build`
+- 审计冒烟（可重跑）：`pnpm build && pnpm exec vite preview --port 4173`，另开一个终端 `node audit/2026-10-28/browser-smoke.mjs`；9 步截图写到 `screenshots/audit-2026-10-28/`。Playwright 默认浏览器没装时，用 `CHROMIUM_PATH` 指向本机已有的 Chromium/Chrome。
+- 真机复核（只读目录 + 关窗确认）：先 `pnpm tauri build --debug --no-bundle`，再用 `WIKLOOM_STATE_DIR`（内含 `vault-path.txt`）和 `WIKLOOM_WEBVIEW_DATA_DIR` 指向临时目录启动 debug 版，`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223`；随后 `node audit/2026-10-28/tauri-check.mjs`，步骤见脚本头部注释。
 - Playwright（内存 FS）：首次引导、真实文件列表、新建 `.md`、自动保存 / `Ctrl S`、刷新重开、换库、坏库错误页；脚本在工作区 `.tools/shoot/m2-e2e.mjs`
 - 真实磁盘 harness（Node fs 适配器跑同一套 core/vault）：frontmatter 补写、已有字段保留、原子保存、重开、换库不写脏、删库报错
 - AI 真机 E2E（脚本在工作区 `.tools/shoot/`）：设置页检测/测试、全篇生成预览与落盘、内联动作替换/下方插入、自定义模式增删改与持久化；假 CLI 覆盖取消/缺 CLI/解析失败，真实 Claude 跑通 Feynman 全篇生成与 Simplify 内联动作

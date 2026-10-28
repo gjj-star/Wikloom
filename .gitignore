@@ -21,6 +21,8 @@ src-tauri/gen/
 .DS_Store
 Thumbs.db
 *.log
+# 审计证据日志需要入库（其余 *.log 仍忽略）
+!audit/**/*.log
 pnpm-debug.log*
 .omc/
 

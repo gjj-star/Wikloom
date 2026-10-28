@@ -5,6 +5,7 @@ import {
   isTauriRuntime,
 } from "../core/fs/runtime";
 import { Shell } from "./Shell";
+import { CloseConfirmDialog } from "./CloseConfirmDialog";
 import { useUiStore } from "./uiStore";
 import { VaultPicker } from "./VaultPicker";
 import { BootScreen } from "../features/notes/BootScreen";
@@ -79,14 +80,17 @@ export function App() {
       const stop = await current.onCloseRequested(async (event) => {
         // 先拦住关闭，把 800ms 防抖窗口里的最后几个字刷盘，再真正关窗。
         event.preventDefault();
+        const flushed = await useNotesStore.getState().flush();
+        if (!flushed) {
+          // 写盘失败时草稿只在内存里，直接关窗就丢了；弹应用内确认框让用户选。
+          // 不用 window.confirm：Tauri 里它没有可交互的原生对话框，会直接按 true 返回。
+          useUiStore.getState().setClosePrompt(true);
+          return;
+        }
         try {
-          await useNotesStore.getState().flush();
-        } finally {
-          try {
-            await current.destroy();
-          } catch {
-            // 窗口可能已经被系统关闭
-          }
+          await current.destroy();
+        } catch {
+          // 窗口可能已经被系统关闭
         }
       });
 
@@ -164,6 +168,7 @@ export function App() {
       {content}
       <VaultPicker />
       <ContextMenuHost />
+      <CloseConfirmDialog />
       <Toaster />
     </>
   );

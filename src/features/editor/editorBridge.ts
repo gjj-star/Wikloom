@@ -138,30 +138,173 @@ export function selectAllInActiveEditor(): ApplyInlineResult {
   return { ok: true };
 }
 
+export type LocateResult = { ok: true } | { ok: false; reason: string };
+
 /**
  * 阅读态发起建链时，切到编辑态后按文本和出现序号找回选区。
- * 返回 false 表示编辑器还没挂载或第 N 处文本已经不在原文里。
+ * 序号来自渲染后的正文，只数和渲染一致的「可见出现」；定位不可靠时返回原因，
+ * 调用方必须提示用户回编辑态重选，不能猜着替换（v0.4.2）。
  */
-export function selectTextInActiveEditor(
+export function locateTextInActiveEditor(
   text: string,
   occurrence = 0,
-): boolean {
+): LocateResult {
   const view = activeView;
-  if (!view || !view.dom.isConnected || !text.trim()) return false;
-  const doc = view.state.doc.toString();
-  let index = -1;
-  let from = 0;
-  for (let count = 0; count <= occurrence; count += 1) {
-    index = doc.indexOf(text, from);
-    if (index < 0) return false;
-    from = index + text.length;
+  if (!view || !view.dom.isConnected) {
+    return { ok: false, reason: "编辑器还没有挂载" };
   }
+  if (!text.trim()) return { ok: false, reason: "没有选中文字" };
+  if (text.includes("\n")) {
+    return {
+      ok: false,
+      reason: "选区跨了多行，位置不可靠；请切到编辑态重新选择。",
+    };
+  }
+
+  const doc = view.state.doc.toString();
+  const index = findVisibleOccurrence(doc, text, occurrence);
+  if (index < 0) {
+    return {
+      ok: false,
+      reason: "原文里找不到刚才选中的文字，可能已被修改；请切到编辑态重新选择。",
+    };
+  }
+
+  // 代码块/行内代码在阅读态以文本显示，但把 [[链接]] 写进去会破坏代码；
+  // 这类位置一律拒绝，不做猜测。
+  if (codeRanges(doc).some(([from, to]) => index < to && index + text.length > from)) {
+    return {
+      ok: false,
+      reason: "选中的文字在代码块或行内代码里，不能从阅读态建链；请切到编辑态重新选择。",
+    };
+  }
+
   view.dispatch({
     selection: { anchor: index, head: index + text.length },
     scrollIntoView: true,
   });
   view.focus();
-  return true;
+  return { ok: true };
+}
+
+/** 兼容旧调用：只关心能否选中。 */
+export function selectTextInActiveEditor(
+  text: string,
+  occurrence = 0,
+): boolean {
+  return locateTextInActiveEditor(text, occurrence).ok;
+}
+
+/** 围栏代码块与行内代码的区间：[from, to) 半开区间。 */
+function codeRanges(doc: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  let offset = 0;
+  let fence: { char: string; length: number; start: number } | null = null;
+
+  for (const line of doc.split("\n")) {
+    const start = offset;
+    const end = start + line.length;
+    const marker = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+
+    if (fence) {
+      if (
+        marker &&
+        marker[1][0] === fence.char &&
+        marker[1].length >= fence.length
+      ) {
+        ranges.push([fence.start, end]);
+        fence = null;
+      }
+    } else if (marker) {
+      fence = { char: marker[1][0], length: marker[1].length, start };
+    } else {
+      for (const match of line.matchAll(/(`+)([^`\n]*?)\1/g)) {
+        const from = start + (match.index ?? 0);
+        ranges.push([from, from + match[0].length]);
+      }
+    }
+
+    offset = end + 1;
+  }
+
+  // 未闭合的围栏按到文末算，宁可少定位也不改错地方。
+  if (fence) ranges.push([fence.start, doc.length]);
+  return ranges;
+}
+
+/** Markdown 里不进入阅读态正文的片段，[from, to) 半开区间；代码区间内不算隐藏。 */
+function hiddenRanges(doc: string): Array<[number, number]> {
+  const code = codeRanges(doc);
+  const raw: Array<[number, number]> = [];
+
+  // YAML frontmatter：阅读态不渲染。
+  const front = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(doc);
+  if (front) raw.push([0, front[0].length]);
+
+  // 图片整段：阅读态渲染成 <img>，alt 与地址都不显示为正文文字。
+  for (const match of doc.matchAll(/!\[[^\]]*\]\([^)\n]*\)/g)) {
+    const from = match.index ?? 0;
+    raw.push([from, from + match[0].length]);
+  }
+
+  // 行内链接的地址部分 `](...)`，允许一层嵌套括号。
+  for (let i = doc.indexOf("]("); i >= 0; i = doc.indexOf("](", i + 1)) {
+    const open = i + 1;
+    let depth = 0;
+    let end = -1;
+    for (let cursor = open; cursor < doc.length && cursor - open <= 2048; cursor += 1) {
+      const char = doc[cursor];
+      if (char === "\n") break;
+      if (char === "(") depth += 1;
+      else if (char === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          end = cursor + 1;
+          break;
+        }
+      }
+    }
+    if (end > open) raw.push([open, end]);
+  }
+
+  // 引用式链接定义整行；HTML 注释。这两种在阅读态都不显示为正文。
+  // 注意不要把 HTML 标签和自动链接整个排除：阅读态里它们可能以文字形式可见，
+  // 排掉反而会让序号少算。
+  for (const match of doc.matchAll(/^\s{0,3}\[[^\]]+\]:.*$/gm)) {
+    const from = match.index ?? 0;
+    raw.push([from, from + match[0].length]);
+  }
+  for (const match of doc.matchAll(/<!--[\s\S]*?-->/g)) {
+    const from = match.index ?? 0;
+    raw.push([from, from + match[0].length]);
+  }
+
+  // 代码块/行内代码里的 `](...)` 在阅读态是可见代码文本，不能当隐藏地址。
+  return raw.filter(
+    ([from, to]) =>
+      !code.some(([codeFrom, codeTo]) => from < codeTo && to > codeFrom),
+  );
+}
+
+function findVisibleOccurrence(
+  doc: string,
+  text: string,
+  occurrence: number,
+): number {
+  const hidden = hiddenRanges(doc);
+  const isHidden = (index: number) =>
+    hidden.some(([from, to]) => index >= from && index < to);
+
+  let visible = -1;
+  for (let cursor = 0; cursor <= doc.length; cursor += 1) {
+    const index = doc.indexOf(text, cursor);
+    if (index < 0) return -1;
+    cursor = index + text.length - 1;
+    if (isHidden(index)) continue;
+    visible += 1;
+    if (visible === occurrence) return index;
+  }
+  return -1;
 }
 
 /** 把生成结果写回快照里的那个编辑器；插入下方时与插件一致，先加两个换行。 */

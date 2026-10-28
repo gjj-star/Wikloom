@@ -35,6 +35,7 @@ const SAVE_DELAY = 800;
 let activeFs: FileSystemPort | null = null;
 let saveTimer: number | undefined;
 let pendingNoteId: string | null = null;
+let failedNoteIds = new Set<string>();
 let inFlightSave: Promise<void> | null = null;
 let bootstrapStarted = false;
 
@@ -97,13 +98,22 @@ interface NotesState {
   createGeneratedNote: (input: NewNoteContent) => Promise<Note>;
   updateContent: (id: string, content: string) => void;
   updateTags: (id: string, tags: string[]) => void;
-  saveNote: (id?: string) => Promise<void>;
-  flush: () => Promise<void>;
+  /** 返回是否真正写入磁盘；失败时为 false，草稿仍留在内存。 */
+  saveNote: (id?: string) => Promise<boolean>;
+  /** 返回是否已全部落盘；失败时为 false。 */
+  flush: () => Promise<boolean>;
 }
 
 export const useNotesStore = create<NotesState>((set, get) => {
   async function load(vault: VaultInfo, keepSelection = false): Promise<void> {
-    await get().flush();
+    // 写盘失败时不能继续清空内存：草稿只在内存里，清掉就真丢了。
+    const flushed = await get().flush();
+    if (!flushed) {
+      set((state) => ({
+        saveError: state.saveError ?? "有内容未能保存，草稿已保留。",
+      }));
+      return;
+    }
     const previousId = keepSelection ? get().selectedId : "";
 
     set({
@@ -357,7 +367,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
       const note = get().notes.find((item) => item.id === id);
       const vault = get().vault;
       const fs = activeFs;
-      if (!note || !vault || !fs) return;
+      if (!note || !vault || !fs) return false;
 
       if (saveTimer !== undefined) {
         window.clearTimeout(saveTimer);
@@ -367,13 +377,16 @@ export const useNotesStore = create<NotesState>((set, get) => {
 
       if (inFlightSave) await inFlightSave;
       const current = get().notes.find((item) => item.id === id);
-      if (!current) return;
+      if (!current) return false;
 
       set({ saveState: "saving", saveError: null });
 
+      let written = false;
       const task = (async () => {
         const updatedAt = Date.now();
         await writeNoteFile(fs, vault.root, { ...current, updatedAt });
+        written = true;
+        failedNoteIds.delete(id);
         const latest = get().notes.find((item) => item.id === id);
         // 内容或标签在写入途中变了，就不能显示「已保存」；后续防抖会再写一次。
         const stillCurrent = Boolean(
@@ -391,6 +404,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
         }));
       })()
         .catch((error: unknown) => {
+          failedNoteIds.add(id);
           const failure = toVaultError(
             error,
             "WRITE_FAILED",
@@ -407,6 +421,7 @@ export const useNotesStore = create<NotesState>((set, get) => {
 
       inFlightSave = task;
       await task;
+      return written;
     },
 
     async flush() {
@@ -416,8 +431,17 @@ export const useNotesStore = create<NotesState>((set, get) => {
       }
       const pending = pendingNoteId;
       pendingNoteId = null;
-      if (pending) await get().saveNote(pending);
+      if (pending && !(await get().saveNote(pending))) return false;
+      // 上次写盘失败的笔记要逐篇重试；不能只看 saveState——别的笔记保存成功会把它盖成 saved。
+      for (const id of [...failedNoteIds]) {
+        if (!get().notes.some((note) => note.id === id)) {
+          failedNoteIds.delete(id);
+          continue;
+        }
+        if (!(await get().saveNote(id))) return false;
+      }
       if (inFlightSave) await inFlightSave;
+      return failedNoteIds.size === 0 && get().saveState !== "error";
     },
   };
 });
