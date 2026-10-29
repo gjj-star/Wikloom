@@ -89,32 +89,45 @@ interface GraphData { nodes: GraphNode[]; edges: GraphEdge[]; missingLinks: numb
 
 合计约 4–5 个工作日（含 S3 spike，不含 Review 的时间）。
 
-## 7. Spike（S3，半天，渲染接入前）
+## 7. Spike（S3，已完成：2026-10-29）
 
-选型结论是 cytoscape.js 主选、sigma.js 备选；「1000 节点 / 5000 边能跑」目前只是推断，不能当依据（参照 L-20261028-01）。S3 用半天把推断变成数字，不达标就换 sigma——数据源与 `GraphData` 不变，只换渲染层。
+结论：**渲染用 cytoscape.js 达标，不换 sigma；但必须把 `cose` 布局限到 `numIter=50`。** 完整数据与环境见 `audit/graph-spike/README.md`、`results-100.json`、`results-50.json`。
 
-做法：
+做法（已执行）：临时 spike 路由 + Tauri debug（WebView2）真机，合成 1000 节点 / 5000 边，两组渲染配置各 5 轮取中位数：
 
-- 依赖：`cytoscape@3.34.x`（MIT、零运行时依赖），本地打包，不引 CDN；`package.json` 与 lock 同步提交。
-- 数据：用 `buildGraph` 的合成输入造 1000 节点、5000 边（每节点平均 5 条出边，含少量孤立节点与断链），不依赖真实知识库。
-- 页面：临时 spike 路由（仅存在 spike 分支，验收完删除，不并入主线），Tauri debug 版（WebView2）里打开；浏览器结果只作对照。
-- 测量（每次跑 5 轮，记录中位数 / p95，原始日志存 `audit/graph-spike/`，脱敏后入库）：
-  1. 首屏布局耗时：数据就绪 → 首个可交互帧（`requestAnimationFrame` 回调）的 `performance.now()` 差。
-  2. hover 高亮延迟：`pointermove` 命中节点 → 邻居 class 应用并完成重绘（下一个 rAF）的时间；重复 30 次取 p95。
-  3. 拖拽平移帧率：脚本连续平移 3 秒，统计 rAF 间隔的平均 FPS 与长帧（>50ms）数量。
-- 判定：首屏 > 2s 或 hover p95 > 100ms → 换 sigma.js；平移先记录，阈值实测后再定（建议 ≥ 30 FPS 且无明显长帧）。
-- 产出：三个数字 + 环境（WebView2 版本、机器大致配置）+ 结论（留在 cytoscape / 切 sigma）写回本文 §7，并据此更新 S4 的适配库。
+- `default`：不改任何渲染选项（满画质）。
+- `hints`：`hideEdgesOnViewport`、`textureOnViewport`、`motionBlur` 全开。
+- 测量：首屏（数据就绪 → 首个可交互帧）、preset 首帧（只含建图+一次绘制）、hover p95（30 次/轮）、平移 3 秒的平均 FPS 与 >50ms 长帧数。
+
+结果（中位数，阈值：首屏 ≤2s、hover ≤100ms、FPS ≥50、长帧 ≤3）：
+
+| 布局预算 | 配置 | 首屏 | preset 首帧 | hover p95 | 平移 FPS | 长帧 | 判定 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| numIter=100 | default | 2718 ms | 284 ms | 41 ms | 53.3 | 1 | 首屏不达标 |
+| numIter=100 | hints | 2617 ms | 238 ms | 45 ms | 53.3 | 0 | 首屏不达标 |
+| numIter=50 | default | **1559 ms** | 288 ms | **44 ms** | **52.3** | **0** | **全部达标（满画质）** |
+| numIter=50 | hints | 1598 ms | 240 ms | 46 ms | 52.7 | 1 | 全部达标 |
+
+布局预算诊断：`cose` 不设上限时布局 12.5–13.1s；100 次约 2.1s；50 次约 1.25s；25 次约 0.8s。
+
+由此定下：
+
+1. **不换 sigma。** 首屏超标全部来自布局，渲染只占 240–288ms；换渲染层解决不了布局成本。
+2. **满画质即达标，不需要降质开关。** `default` 四项全过，`hints` 无收益，因此不做「有条件达标」，S4 默认三个 hint 全关。
+3. **S4 必须带 `cose` 的 `numIter=50`（±25 可再调）。** 不设上限首屏不可用；代价是布局收敛度降低，S4 用真实笔记数据复核一次观感（合成图截图见 `layout-50.png` / `layout-100.png`）。
+4. 限制：单机单次、合成图；性能数字可作依据，观感需真实数据复核。
 
 ## 8. 已定决策与剩余未知
 
 已定（2026-10-29）：
 
-1. 渲染库 cytoscape.js；sigma.js 仅作备选，是否启用看 §7 的 S3 数字。
+1. 渲染库 cytoscape.js；sigma.js 仅作备选，S3 数据未触发切换。
 2. 标签筛选暂不做，等实际使用中有人提再加。
 3. 边不画箭头，方向只保留在数据里。
 4. Sidebar 入口 `count` 显示节点数（笔记数），边数与断链数放进悬浮提示。
+5. 布局预算：`cose` 必须设 `numIter≈50`；三个渲染 hint 全部保持默认 false。
 
 剩余未知：
 
-1. S3 的三个数字（首屏、hover p95、平移 FPS）与最终是否切 sigma。
-2. 平移帧率的验收阈值（先记录，实测后写死）。
+1. 真实笔记图（非合成）在 1000 节点规模下的观感与首屏数字，S4 复核。
+2. 节点超过 1000（上限受扫描 `MAX_FILES` 约束）时的退化策略，暂不处理。
