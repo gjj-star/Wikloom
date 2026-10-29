@@ -4,6 +4,7 @@ import {
   FolderOpen,
   Library,
   Moon,
+  Network,
   Plus,
   Scissors,
   Settings,
@@ -12,6 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "../ui/cn";
 import { modKey } from "../core/platform";
+import { buildGraph } from "../core/graph/buildGraph";
+import type { Note } from "../core/notes/types";
 import { IconButton } from "../ui/IconButton";
 import { Kbd } from "../ui/Kbd";
 import { createNote, openAllNotes } from "./actions";
@@ -24,6 +27,8 @@ function NavItem({
   count,
   badge,
   active,
+  title,
+  onMouseEnter,
   onClick,
 }: {
   icon: ReactNode;
@@ -31,12 +36,16 @@ function NavItem({
   count?: number;
   badge?: string;
   active: boolean;
+  title?: string;
+  onMouseEnter?: () => void;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      title={title}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-2 py-[7px] text-[12.5px] transition-colors",
@@ -75,6 +84,21 @@ export function Sidebar() {
 
   const notes = useNotesStore((state) => state.notes);
   const vault = useNotesStore((state) => state.vault);
+  const [graphTitle, setGraphTitle] = useState<string | null>(null);
+  const graphInfoRef = useRef<{ notes: Note[]; text: string } | null>(null);
+
+  // 图谱入口的悬浮提示要边数和断链数；只在鼠标进来时算一次，避免打字时跟着重算全库。
+  function describeGraph(): void {
+    const current = useNotesStore.getState().notes;
+    if (graphInfoRef.current?.notes === current) {
+      setGraphTitle(graphInfoRef.current.text);
+      return;
+    }
+    const graph = buildGraph(current);
+    const text = `全库关系图：${graph.nodes.length} 篇笔记 · ${graph.edges.length} 条链接 · ${graph.missingLinks} 条断链`;
+    graphInfoRef.current = { notes: current, text };
+    setGraphTitle(text);
+  }
 
   useEffect(() => {
     if (!vaultOpen) return;
@@ -132,6 +156,15 @@ export function Sidebar() {
           count={notes.length}
           active={route === "notes" && !clipOpen}
           onClick={openAllNotes}
+        />
+        <NavItem
+          icon={<Network size={15} />}
+          label="图谱"
+          count={notes.length}
+          title={graphTitle ?? "全库关系图"}
+          onMouseEnter={describeGraph}
+          active={route === "graph" && !clipOpen}
+          onClick={() => navigate("graph")}
         />
         <NavItem
           icon={<TagsIcon size={15} />}

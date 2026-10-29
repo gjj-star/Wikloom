@@ -7,6 +7,7 @@ import { CreateLinkNoteDialog } from "../features/ai/CreateLinkNoteDialog";
 import { NoteList } from "../features/notes/NoteList";
 import { NotePane } from "../features/notes/NotePane";
 import { TagsPage } from "../features/notes/TagsPage";
+import { GraphPage } from "../features/graph/GraphPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { useUiStore } from "./uiStore";
 import { CommandPalette } from "./CommandPalette";
@@ -27,6 +28,8 @@ export function Shell() {
           </>
         ) : route === "tags" ? (
           <TagsPage />
+        ) : route === "graph" ? (
+          <GraphPage />
         ) : route === "clipper" ? (
           <ClipperPage />
         ) : (

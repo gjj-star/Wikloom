@@ -1,4 +1,5 @@
 import { displayNameFromRoot } from "../core/paths";
+import { resolveNoteByTitle } from "../core/notes/resolveByTitle";
 import { isTauriRuntime } from "../core/fs/runtime";
 import { seedDemoVault } from "../features/notes/data/demoVaults";
 import { useNotesStore } from "../features/notes/store";
@@ -20,11 +21,7 @@ export function openNote(
 }
 
 export function openNoteByTitle(title: string): boolean {
-  const note = useNotesStore
-    .getState()
-    .notes.find(
-      (item) => item.title.toLowerCase() === title.trim().toLowerCase(),
-    );
+  const note = resolveNoteByTitle(useNotesStore.getState().notes, title);
   if (!note) return false;
   openNote(note.id, { mode: "read" });
   return true;
