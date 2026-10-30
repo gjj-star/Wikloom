@@ -1,0 +1,81 @@
+{
+  "note": "临时 S6 验证页驱动 GraphCanvas；验证后页面已删除。",
+  "before": {
+    "signature": "3:4",
+    "zoom": 2.037,
+    "panX": 564.4,
+    "panY": 362.7,
+    "positions": {
+      "a": {
+        "x": 58.4,
+        "y": 54.89
+      },
+      "b": {
+        "x": 45.09,
+        "y": 6
+      },
+      "c": {
+        "x": 6,
+        "y": 47.4
+      }
+    }
+  },
+  "afterData": {
+    "signature": "4:5",
+    "zoom": 2.037,
+    "panX": 564.4,
+    "panY": 362.7,
+    "positions": {
+      "a": {
+        "x": 58.4,
+        "y": 54.89
+      },
+      "b": {
+        "x": 45.09,
+        "y": 6
+      },
+      "c": {
+        "x": 6,
+        "y": 47.4
+      },
+      "d": {
+        "x": 94.4,
+        "y": 54.89
+      }
+    }
+  },
+  "afterTheme": {
+    "signature": "4:5",
+    "zoom": 2.037,
+    "panX": 564.4,
+    "panY": 362.7,
+    "positions": {
+      "a": {
+        "x": 58.4,
+        "y": 54.89
+      },
+      "b": {
+        "x": 45.09,
+        "y": 6
+      },
+      "c": {
+        "x": 6,
+        "y": 47.4
+      },
+      "d": {
+        "x": 94.4,
+        "y": 54.89
+      }
+    }
+  },
+  "checks": {
+    "existingNodeFrozen": true,
+    "newNodePlaced": true,
+    "newNodeNotOnTop": true,
+    "zoomPreserved": true,
+    "panPreserved": true,
+    "themeKeepsLayout": true,
+    "signatureChanged": true
+  },
+  "errors": []
+}
