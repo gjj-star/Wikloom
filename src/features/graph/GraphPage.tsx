@@ -1,86 +1,120 @@
 import { useMemo } from "react";
 import { Network } from "lucide-react";
 import { useNotesStore } from "../notes/store";
-import { createNote } from "../../app/actions";
+import { createNote, openNote } from "../../app/actions";
 import { useUiStore } from "../../app/uiStore";
 import { Button } from "../../ui/Button";
 import { EmptyState } from "../../ui/EmptyState";
 import { buildGraph } from "../../core/graph/buildGraph";
+import { GraphCanvas } from "./GraphCanvas";
+import { describeEmptyLinks } from "./emptyGraphText";
 
 /**
- * 全库关系图页面（S2：路由与空态）。
- * 数据来自内存里的 notes，不读磁盘；渲染层在 S4 接入。
+ * 全库关系图页面：数据来自内存里的 notes，渲染交给 GraphCanvas（cytoscape）。
+ * 点击节点打开笔记；悬浮节点高亮直接相连的笔记。
  */
 export function GraphPage() {
   const notes = useNotesStore((state) => state.notes);
-  const navigate = useUiStore((state) => state.navigate);
   const status = useNotesStore((state) => state.status);
+  const navigate = useUiStore((state) => state.navigate);
+  const openVaultPicker = useUiStore((state) => state.openVaultPicker);
+  const theme = useUiStore((state) => state.theme);
 
   const graph = useMemo(() => buildGraph(notes), [notes]);
   const loading = status === "loading" || status === "idle";
+
+  let content;
+  if (loading) {
+    content = (
+      <div className="flex h-full items-center justify-center text-[12px] text-faint">
+        正在读取知识库…
+      </div>
+    );
+  } else if (status === "onboarding") {
+    content = (
+      <div className="flex h-full items-center justify-center">
+        <EmptyState
+          icon={<Network size={18} />}
+          title="还没有选择知识库"
+          description="先选一个文件夹或演示库，图谱才有笔记可显示。"
+          action={
+            <Button size="sm" variant="primary" onClick={openVaultPicker}>
+              选择知识库
+            </Button>
+          }
+        />
+      </div>
+    );
+  } else if (status === "error") {
+    content = (
+      <div className="flex h-full items-center justify-center">
+        <EmptyState
+          icon={<Network size={18} />}
+          title="知识库读取失败"
+          description="回到笔记页修好知识库后再回来看图谱。"
+          action={
+            <Button size="sm" onClick={() => navigate("notes")}>
+              回到笔记页
+            </Button>
+          }
+        />
+      </div>
+    );
+  } else if (graph.nodes.length === 0) {
+    content = (
+      <div className="flex h-full items-center justify-center">
+        <EmptyState
+          icon={<Network size={18} />}
+          title="知识库里还没有笔记"
+          description="新建第一篇笔记后，这里会显示全库的双向链接关系。"
+          action={
+            <Button size="sm" variant="primary" onClick={() => void createNote()}>
+              新建笔记
+            </Button>
+          }
+        />
+      </div>
+    );
+  } else if (graph.edges.length === 0) {
+    content = (
+      <div className="flex h-full items-center justify-center">
+        <EmptyState
+          icon={<Network size={18} />}
+          title="还没有双向链接"
+          description={describeEmptyLinks(graph)}
+          action={
+            <Button size="sm" onClick={() => navigate("notes")}>
+              回到全部笔记
+            </Button>
+          }
+        />
+      </div>
+    );
+  } else {
+    content = (
+      <GraphCanvas
+        data={graph}
+        theme={theme}
+        onOpenNote={(id) => openNote(id, { mode: "read" })}
+      />
+    );
+  }
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-6">
         <h1 className="text-[13px] font-semibold text-ink">图谱</h1>
-        <span className="ml-auto text-[11px] text-faint">
+        <span className="text-[11px] text-faint">
           {loading
-            ? "正在读取知识库…"
-            : `${graph.nodes.length} 篇笔记 · ${graph.edges.length} 条链接 · ${graph.missingLinks} 条断链`}
+            ? ""
+            : `${graph.nodes.length} 篇笔记 · ${graph.edges.length} 条链接`}
+        </span>
+        <span className="ml-auto text-[11px] text-faint">
+          {graph.edges.length > 0 ? "悬浮看邻近笔记，点击打开" : ""}
         </span>
       </header>
 
-      <div className="min-h-0 flex-1">
-        {loading ? (
-          <div className="flex h-full items-center justify-center text-[12px] text-faint">
-            正在读取知识库…
-          </div>
-        ) : graph.nodes.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <EmptyState
-              icon={<Network size={18} />}
-              title="知识库里还没有笔记"
-              description="新建第一篇笔记后，这里会显示全库的双向链接关系。"
-              action={
-                <Button size="sm" variant="primary" onClick={() => void createNote()}>
-                  新建笔记
-                </Button>
-              }
-            />
-          </div>
-        ) : graph.edges.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <EmptyState
-              icon={<Network size={18} />}
-              title="还没有双向链接"
-              description={
-                graph.missingLinks > 0
-                  ? `正文里写 [[标题]] 就能和已有笔记连起来；目前另有 ${graph.missingLinks} 条链接指向不存在的笔记。`
-                  : "在正文里写 [[标题]]，或用断链卡片的「创建空白笔记」，就会在这里连成图。"
-              }
-              action={
-                <Button size="sm" onClick={() => navigate("notes")}>
-                  回到全部笔记
-                </Button>
-              }
-            />
-          </div>
-        ) : (
-          <div className="flex h-full items-center justify-center px-8">
-            <div className="flex max-w-[460px] flex-col items-center rounded-xl border border-dashed border-line-strong px-8 py-12 text-center">
-              <Network size={20} className="text-faint" />
-              <p className="mt-3 text-[13px] font-medium text-ink">
-                关系图渲染将在 S4 接入
-              </p>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-                数据层已就绪：{graph.nodes.length} 个节点、{graph.edges.length} 条链接
-                {graph.selfLinks > 0 ? `，${graph.selfLinks} 条自链未画` : ""}
-                {graph.missingLinks > 0 ? `，${graph.missingLinks} 条断链未画` : ""}。
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      <div className="min-h-0 flex-1">{content}</div>
     </div>
   );
 }
