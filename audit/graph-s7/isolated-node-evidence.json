@@ -1,0 +1,27 @@
+{
+  "note": "临时验证页：zoom/pan 非零时新增一个无邻居节点，验证落在 model 坐标视口中心附近且屏幕内可见。",
+  "zoom": 2.037,
+  "pan": {
+    "x": 588.4,
+    "y": 371.5
+  },
+  "canvas": {
+    "width": 1060,
+    "height": 780
+  },
+  "modelCenter": {
+    "x": -28.669612174766804,
+    "y": 9.081983308787432
+  },
+  "isolatedPosition": {
+    "x": 11.35,
+    "y": 9.08
+  },
+  "distanceFromCenter": 40.019612223911636,
+  "rendered": {
+    "x": 611.51995,
+    "y": 389.99596
+  },
+  "visible": true,
+  "errors": []
+}

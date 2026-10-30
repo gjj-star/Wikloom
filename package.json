@@ -1,7 +1,7 @@
 {
   "name": "wikloom",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.5.0",
   "type": "module",
   "description": "Wikloom — 本地优先的个人知识库（M1 界面骨架）",
   "scripts": {

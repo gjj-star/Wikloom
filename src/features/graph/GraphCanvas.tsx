@@ -175,14 +175,18 @@ export function GraphCanvas({ data, theme, onOpenNote }: GraphCanvasProps) {
     container.style.position = "relative";
     container.style.backgroundColor = palette.background;
 
-    const viewport = {
-      width: container.clientWidth || 800,
-      height: container.clientHeight || 600,
+    const previousViewport = viewportRef.current;
+    const zoom = previousViewport?.zoom ?? 1;
+    const pan = previousViewport?.pan ?? { x: 0, y: 0 };
+    // 纯函数吃 model 坐标：像素中心 → (像素中心 − pan) / zoom。
+    const center = {
+      x: ((container.clientWidth || 800) / 2 - pan.x) / zoom,
+      y: ((container.clientHeight || 600) / 2 - pan.y) / zoom,
     };
     const planned = planNodePositions({
       graph: data,
       previous: positionsRef.current,
-      viewport,
+      center,
     });
 
     const elements = buildElements(data);

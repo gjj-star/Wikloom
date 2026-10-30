@@ -7,10 +7,10 @@ export interface GraphPoint {
 
 export interface PlanPositionsInput {
   graph: GraphData;
-  /** 上一次已经摆放好的坐标，按 note.id 索引。 */
+  /** 上一次已经摆放好的坐标，按 note.id 索引（cytoscape model 坐标）。 */
   previous: Map<string, GraphPoint>;
-  /** 画布可视区域，用来给没有邻居的新节点兜底定位。 */
-  viewport: { width: number; height: number };
+  /** 视口中心，必须是 model 坐标：调用方用 (像素中心 − pan) / zoom 换算。 */
+  center: GraphPoint;
 }
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
@@ -19,14 +19,14 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
  * 计算下一次渲染的节点坐标：已存在节点冻结，只给新节点找位置。
  *
  * - 已有 id：原样返回 previous 的坐标，绝不重排（图页面内不漂移）。
- * - 新节点：优先放在「已定位邻居」的平均位置；没有邻居则围绕视口中心按黄金角散开，
- *   避免多个孤立新节点叠在同一点。
+ * - 新节点：优先放在「已定位邻居」的平均位置；没有邻居则围绕 center（model 坐标）按黄金角散开，
+ *   避免多个孤立新节点叠在同一点、也避免把像素坐标当 model 坐标导致落到视口外。
  * - 已经从图里消失的 id 丢弃。
  */
 export function planNodePositions({
   graph,
   previous,
-  viewport,
+  center,
 }: PlanPositionsInput): Map<string, GraphPoint> {
   const positions = new Map<string, GraphPoint>();
 
@@ -38,7 +38,6 @@ export function planNodePositions({
     neighbors.get(edge.target)!.push(edge.source);
   }
 
-  const center = { x: viewport.width / 2, y: viewport.height / 2 };
   let newIndex = 0;
 
   for (const node of graph.nodes) {

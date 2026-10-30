@@ -1,0 +1,8 @@
+{
+  "runtime": "Tauri debug / WebView2",
+  "signature": "2:2",
+  "header": "图谱 | 2 篇笔记 · 2 条链接 | 悬浮看邻近笔记，点击打开",
+  "nodeHover": true,
+  "clickNavigates": true,
+  "errors": []
+}
