@@ -12,18 +12,38 @@ import { SettingsPage } from "../features/settings/SettingsPage";
 import { useUiStore } from "./uiStore";
 import { CommandPalette } from "./CommandPalette";
 import { Sidebar } from "./Sidebar";
+import { Splitter } from "../ui/Splitter";
 
 export function Shell() {
   const route = useUiStore((state) => state.route);
+  const backlinksOpen = useUiStore((state) => state.backlinksOpen);
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-canvas text-ink">
       <Sidebar />
+      <Splitter
+        pane="sidebar"
+        label="调整侧栏宽度"
+        drawerOpen={route === "notes" && backlinksOpen}
+      />
       <main className="flex min-w-0 flex-1">
         {route === "notes" ? (
           <>
             <NoteList />
+            <Splitter
+              pane="noteList"
+              label="调整笔记列表宽度"
+              drawerOpen={backlinksOpen}
+            />
             <NotePane />
+            {backlinksOpen ? (
+              <Splitter
+                pane="backlinks"
+                label="调整反链面板宽度"
+                growDirection="left"
+                drawerOpen
+              />
+            ) : null}
             <BacklinkDrawer />
           </>
         ) : route === "tags" ? (

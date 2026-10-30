@@ -10,6 +10,7 @@ import type { Backlink } from "../../core/links/backlinks";
 import { getBacklinks } from "../../core/links/backlinks";
 import { relativeTime } from "../../core/time/relativeTime";
 import { copyText, openNote } from "../../app/actions";
+import { clampPaneWidth, useLayoutStore } from "../../app/layoutStore";
 import { useUiStore } from "../../app/uiStore";
 import { cn } from "../../ui/cn";
 import { openContextMenu } from "../../ui/ContextMenu";
@@ -88,6 +89,10 @@ export function BacklinkDrawer() {
   const setOpen = useUiStore((state) => state.setBacklinksOpen);
   const notes = useNotesStore((state) => state.notes);
   const selectedId = useNotesStore((state) => state.selectedId);
+  // 抽屉宽度单独记忆：收起再打开沿用上次拖到的值。
+  const drawerWidth = useLayoutStore((state) =>
+    clampPaneWidth("backlinks", state.backlinks),
+  );
   const [tab, setTab] = useState<BacklinkTab>("references");
 
   const note = notes.find((item) => item.id === selectedId);
@@ -111,12 +116,11 @@ export function BacklinkDrawer() {
       <aside
         aria-label="反向链接"
         inert={!open}
-        className={cn(
-          "shrink-0 overflow-hidden bg-surface transition-[width] duration-200 ease-out",
-          open ? "w-[340px] border-l border-line" : "w-0",
-        )}
+        data-resizable-drawer
+        className="shrink-0 overflow-hidden bg-surface transition-[width] duration-200 ease-out"
+        style={{ width: open ? drawerWidth : 0 }}
       >
-      <div className="flex h-full w-[340px] flex-col">
+      <div className="flex h-full flex-col" style={{ width: drawerWidth }}>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-4">
           <Link2 size={15} className="text-muted" />
           <h2 className="text-[13px] font-semibold text-ink">反向链接</h2>

@@ -14,6 +14,7 @@ import { searchNotes } from "../../core/search/searchNotes";
 import { excerpt } from "../../core/text/plainText";
 import { relativeTime } from "../../core/time/relativeTime";
 import { copyText, createNote, openNote } from "../../app/actions";
+import { clampPaneWidth, useLayoutStore } from "../../app/layoutStore";
 import { useUiStore } from "../../app/uiStore";
 import { Button } from "../../ui/Button";
 import { cn } from "../../ui/cn";
@@ -121,6 +122,10 @@ export function NoteList() {
   const setQuery = useNotesStore((state) => state.setQuery);
   const setTagFilter = useNotesStore((state) => state.setTagFilter);
   const rescan = useNotesStore((state) => state.rescan);
+  // 列表宽度由分隔条写入 store；窄窗临时压缩留给 L3 的 resize 逻辑处理。
+  const noteListWidth = useLayoutStore((state) =>
+    clampPaneWidth("noteList", state.noteList),
+  );
 
   const filtered = useMemo(() => {
     const result = searchNotes(notes, query);
@@ -133,7 +138,10 @@ export function NoteList() {
   const hasFilter = Boolean(query.trim() || tagFilter);
 
   return (
-    <section className="flex w-[320px] shrink-0 flex-col border-r border-line bg-surface">
+    <section
+      className="flex shrink-0 flex-col bg-surface"
+      style={{ width: noteListWidth }}
+    >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-3">
         <h2 className="text-[13px] font-semibold text-ink">全部笔记</h2>
         <span className="rounded-full bg-hover px-1.5 py-0.5 text-[10px] tabular-nums text-muted">

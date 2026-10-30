@@ -1,0 +1,216 @@
+{
+  "ok": true,
+  "failure": null,
+  "generatedAt": "2026-10-30T07:53:39.457Z",
+  "base": "http://127.0.0.1:4173",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "storageKey": "wikloom:layout.v1",
+  "checks": [
+    {
+      "name": "默认侧栏宽度 220",
+      "ok": true,
+      "detail": "220"
+    },
+    {
+      "name": "默认笔记列表宽度 320",
+      "ok": true,
+      "detail": "320"
+    },
+    {
+      "name": "S3 抽屉关闭时不渲染",
+      "ok": true
+    },
+    {
+      "name": "S1 拖动 +60 后宽度约 280",
+      "ok": true,
+      "detail": "280"
+    },
+    {
+      "name": "S1 松手后写入 localStorage 且其他栏不变",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":280,\"noteList\":320,\"backlinks\":340}"
+    },
+    {
+      "name": "S1 拖动后 aria-valuenow 同步",
+      "ok": true,
+      "detail": "280"
+    },
+    {
+      "name": "S1 刷新后宽度保持",
+      "ok": true,
+      "detail": "280"
+    },
+    {
+      "name": "S1 End 到上限 320",
+      "ok": true,
+      "detail": "320"
+    },
+    {
+      "name": "S1 键盘调整后写入 localStorage",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":320,\"noteList\":320,\"backlinks\":340}"
+    },
+    {
+      "name": "S1 双击恢复默认 220",
+      "ok": true,
+      "detail": "220"
+    },
+    {
+      "name": "S1 拖过头停在最小值 180",
+      "ok": true,
+      "detail": "180"
+    },
+    {
+      "name": "S2 拖动 +80 后列表宽度约 400",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "name": "S2 松手后写入 localStorage",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":220,\"noteList\":400,\"backlinks\":340}"
+    },
+    {
+      "name": "S2 双击恢复默认 320",
+      "ok": true,
+      "detail": "320"
+    },
+    {
+      "name": "S3 抽屉打开后分隔条出现",
+      "ok": true
+    },
+    {
+      "name": "抽屉默认宽度 340",
+      "ok": true,
+      "detail": "340"
+    },
+    {
+      "name": "拖动期间抽屉宽度过渡为 none",
+      "ok": true,
+      "detail": "0s"
+    },
+    {
+      "name": "S3 向左拖 60 后抽屉约 400",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "name": "S3 松手后写入 localStorage",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":220,\"noteList\":320,\"backlinks\":400}"
+    },
+    {
+      "name": "S3 关闭后分隔条移除",
+      "ok": true
+    },
+    {
+      "name": "S3 关闭后保存值不变 400",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":220,\"noteList\":320,\"backlinks\":400}"
+    },
+    {
+      "name": "S3 重新打开沿用上次宽度 400",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "name": "S3 双击恢复默认 340",
+      "ok": true,
+      "detail": "340"
+    },
+    {
+      "name": "S3 双击后 localStorage 记录 340",
+      "ok": true,
+      "detail": "{\"version\":1,\"sidebar\":220,\"noteList\":320,\"backlinks\":340}"
+    },
+    {
+      "name": "整页没有横向滚动条",
+      "ok": true,
+      "detail": "1440>1440"
+    }
+  ],
+  "steps": [
+    {
+      "step": "01",
+      "name": "default",
+      "file": "screenshots\\layout-l2\\01-default.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "02",
+      "name": "s1-drag-280",
+      "file": "screenshots\\layout-l2\\02-s1-drag-280.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "03",
+      "name": "s1-after-reload",
+      "file": "screenshots\\layout-l2\\03-s1-after-reload.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "04",
+      "name": "s1-keyboard-end",
+      "file": "screenshots\\layout-l2\\04-s1-keyboard-end.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "05",
+      "name": "s1-double-click-reset",
+      "file": "screenshots\\layout-l2\\05-s1-double-click-reset.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "06",
+      "name": "s2-drag-400",
+      "file": "screenshots\\layout-l2\\06-s2-drag-400.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "07",
+      "name": "s2-double-click-reset",
+      "file": "screenshots\\layout-l2\\07-s2-double-click-reset.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "08",
+      "name": "s3-drawer-open",
+      "file": "screenshots\\layout-l2\\08-s3-drawer-open.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "09",
+      "name": "s3-drag-400",
+      "file": "screenshots\\layout-l2\\09-s3-drag-400.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "10",
+      "name": "s3-reopen-kept",
+      "file": "screenshots\\layout-l2\\10-s3-reopen-kept.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "11",
+      "name": "s3-double-click-reset",
+      "file": "screenshots\\layout-l2\\11-s3-double-click-reset.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    },
+    {
+      "step": "12",
+      "name": "final",
+      "file": "screenshots\\layout-l2\\12-final.png",
+      "url": "http://127.0.0.1:4173/#/notes"
+    }
+  ],
+  "consoleErrors": [],
+  "finalStorage": {
+    "version": 1,
+    "sidebar": 220,
+    "noteList": 320,
+    "backlinks": 340
+  }
+}

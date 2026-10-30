@@ -19,6 +19,7 @@ import { IconButton } from "../ui/IconButton";
 import { Kbd } from "../ui/Kbd";
 import { createNote, openAllNotes } from "./actions";
 import { useUiStore } from "./uiStore";
+import { clampPaneWidth, useLayoutStore } from "./layoutStore";
 import { useNotesStore } from "../features/notes/store";
 
 function NavItem({
@@ -75,6 +76,8 @@ export function Sidebar() {
   const route = useUiStore((state) => state.route);
   const navigate = useUiStore((state) => state.navigate);
   const theme = useUiStore((state) => state.theme);
+  // 侧栏宽度由分隔条写入 store；窄窗下限 180 在这里也只做 clamp，不压缩保存值。
+  const sidebarWidth = useLayoutStore((state) => clampPaneWidth("sidebar", state.sidebar));
   const toggleTheme = useUiStore((state) => state.toggleTheme);
   const openVaultPicker = useUiStore((state) => state.openVaultPicker);
   const clipOpen = useUiStore((state) => state.clipOpen);
@@ -115,7 +118,10 @@ export function Sidebar() {
   const tagCount = new Set(notes.flatMap((note) => note.tags)).size;
 
   return (
-    <aside className="flex w-[220px] shrink-0 flex-col border-r border-line bg-sidebar">
+    <aside
+      className="flex shrink-0 flex-col bg-sidebar"
+      style={{ width: sidebarWidth }}
+    >
       <div className="flex h-14 items-center gap-2.5 px-4">
         <div className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-accent font-serif text-[14px] font-semibold text-accent-ink shadow-sm">
           W

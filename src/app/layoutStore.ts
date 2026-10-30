@@ -181,8 +181,9 @@ function writeStorage(widths: LayoutWidths): void {
   }
 }
 
+// 初始值直接读盘：避免首帧先按默认宽度画一遍、hydrate 后再跳一下。
 export const useLayoutStore = create<LayoutState>((set, get) => ({
-  ...LAYOUT_DEFAULTS,
+  ...readStorage(),
   setWidth(pane, value) {
     set({ [pane]: clampPaneWidth(pane, value) } as Partial<LayoutWidths>);
   },
